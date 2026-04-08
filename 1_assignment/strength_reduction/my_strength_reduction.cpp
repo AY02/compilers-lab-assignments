@@ -42,7 +42,7 @@ struct MyStrengthReduction: PassInfoMixin<MyStrengthReduction> {
               jter++;
             }
             else if ((val - 1).isPowerOf2()) {
-              // x = 2 ^ k + 1 -> x = (x << k) + x
+              // x * (2 ^ k + 1) -> (x << k) + x
               unsigned exp = (val - 1).exactLogBase2();
               ConstantInt *shift_const = cast<ConstantInt>(ConstantInt::get(op->getType(), exp));
               Instruction *new_instr1 = BinaryOperator::Create(Instruction::Shl, op, shift_const);
@@ -74,14 +74,48 @@ struct MyStrengthReduction: PassInfoMixin<MyStrengthReduction> {
             if (const_divisor->getValue().sgt(0)) {
               APInt val = const_divisor->getValue();
               if (val.isPowerOf2()) {
-                // x = 2 ^ k -> x = x >> k
+                // x / (2 ^ k) -> x >> k
                 unsigned exp = val.exactLogBase2();
                 ConstantInt *shift_const = cast<ConstantInt>(ConstantInt::get(dividend->getType(), exp));
-                Instruction *new_instr1 = nullptr;
-                new_instr1 = BinaryOperator::Create(Instruction::LShr, dividend, shift_const);
+                Instruction *new_instr1 = BinaryOperator::Create(Instruction::LShr, dividend, shift_const);
                 new_instr1->insertAfter(&instr);
                 instr.replaceAllUsesWith(new_instr1);
                 jter++;
+              }
+            }
+          }
+        }
+        else if (instr.getOpcode() == Instruction::SDiv) {
+          Value *dividend = instr.getOperand(0);
+          Value *divisor = instr.getOperand(1);
+          if (ConstantInt *const_divisor = dyn_cast<ConstantInt>(divisor)) {
+            if (const_divisor->getValue().sgt(0)) {
+              APInt val = const_divisor->getValue();
+              if (val.isPowerOf2()) {
+                // There is a problem when the dividend is negative.
+                // In C, division truncates toward zero, e.g., -5 / 2 = -2.
+                // In IR, AShr instruction truncates toward -inf, e.g., -5 >> 1 = -3.
+                // If dividend D is negative, then, given 2 ^ k the divisor, we have that:
+                // - if D is multiple of 2 ^ k, then D / (2 ^ k) = D >> k;
+                // - Otherwise, we have that D / (2 ^ k) = (D >> k) + 1.
+                // In both cases, we have that D / (2 ^ k) = (D + (2 ^ k - 1)) >> k.
+                unsigned exp = val.exactLogBase2();
+                ConstantInt *shift_const = cast<ConstantInt>(ConstantInt::get(dividend->getType(), exp));
+                ConstantInt *zero = cast<ConstantInt>(ConstantInt::get(dividend->getType(), 0));
+                ConstantInt *offset = cast<ConstantInt>(ConstantInt::get(dividend->getType(), val - 1));
+                ICmpInst *cmp = new ICmpInst(ICmpInst::ICMP_SLT, dividend, zero);
+                cmp->insertAfter(&instr);
+                SelectInst *sel = SelectInst::Create(cmp, offset, zero);
+                sel->insertAfter(cmp);
+                Instruction *add = BinaryOperator::Create(Instruction::Add, dividend, sel);
+                add->insertAfter(sel);
+                Instruction *new_instr1 = BinaryOperator::Create(Instruction::AShr, add, shift_const);
+                new_instr1->insertAfter(add);
+                instr.replaceAllUsesWith(new_instr1);
+                j++;
+                j++;
+                j++;
+                j++;
               }
             }
           }
