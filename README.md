@@ -23,3 +23,15 @@ Si considerano istruzioni opposte le coppie add-sub e mul-(udiv, sdiv).
 Data un'istruzione del tipo y = a +- k, se esiste un user x = y -+ k, allora sostituisci tutti gli usi di x con a.
 E se tra "y = a +- k" e "x = y -+ k" la y viene ridefinita? Non e' possibile in quanto siamo in SSA.
 Data un'istruzione del tipo y = a */ k, se esiste un user x = y /* k, allora sostituisci tutti gli usi di x con a.
+Attenzione alle divisioni, in quanto se la divisione non ha resto zero, la situazione si complica.
+Per tale motivo, l'ottimizzazione si fa solo se le divisioni danno resto zero.
+Inoltre, somma e prodotto sono commutative, quindi vale:
+(a +* k) -/ k = (k +* a) -/ k
+
+Casi matrioska:
+%2 = %1 add 1
+%3 = %2 add 1
+%4 = %3 sub 1
+%5 = %4 sub 1
+
+Inoltre, in nessuno di queste ottimizzazioni gestiamo casi di overflow.

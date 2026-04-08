@@ -112,10 +112,10 @@ struct MyStrengthReduction: PassInfoMixin<MyStrengthReduction> {
                 Instruction *new_instr1 = BinaryOperator::Create(Instruction::AShr, add, shift_const);
                 new_instr1->insertAfter(add);
                 instr.replaceAllUsesWith(new_instr1);
-                j++;
-                j++;
-                j++;
-                j++;
+                jter++;
+                jter++;
+                jter++;
+                jter++;
               }
             }
           }
