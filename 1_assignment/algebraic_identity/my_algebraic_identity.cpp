@@ -50,7 +50,8 @@ struct MyAlgebraicIdentity: PassInfoMixin<MyAlgebraicIdentity> {
         // possible tests: x = 0 - 0, x = y - 0, x = 0 - y, x = t - y
         if (BinOp->getOpcode() == Instruction::Sub){
           // the second operator needs to be zero to apply the optimization
-          if (dyn_cast<ConstantInt>(Op1)->getValue().isZero){
+          ConstantInt *C = dyn_cast<ConstantInt>(Op1);
+          if (C && C->isZero()){
               BinOp->replaceAllUsesWith(Op0);
           }
         }
@@ -75,9 +76,10 @@ struct MyAlgebraicIdentity: PassInfoMixin<MyAlgebraicIdentity> {
 
         // DIV CASE
         // possible tests: x = 1 / 4, x = 4 / 1, x = y / 1, x = 1 / y, x = t / y
-        if (BinOp->getOpcode() == Instruction::Div){
+        if (BinOp->getOpcode() == Instruction::SDiv || BinOp->getOpcode() == Instruction::UDiv){
           // the second operator needs to be equal to one
-          if (dyn_cast<ConstantInt>(Op1)->getValue().isOne()){
+          ConstantInt *C = dyn_cast<ConstantInt>(Op1);
+          if (C && C->isOne()){
               BinOp->replaceAllUsesWith(Op0);
           }
         }
