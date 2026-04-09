@@ -26,7 +26,8 @@ struct MyAlgebraicIdentity: PassInfoMixin<MyAlgebraicIdentity> {
         Value *Op0 = BinOp->getOperand(0);
         Value *Op1 = BinOp->getOperand(1);
         
-        // ADD CASE
+        // ADD CASE: 
+        // possible tests: x = 0 + 0, x = y + 0, x = 0 + y, x = t + y
         if (BinOp->getOpcode() == Instruction::Add){
           ConstantInt *C = dyn_cast<ConstantInt>(Op0);
           Value *Other = Op1;
@@ -34,30 +35,28 @@ struct MyAlgebraicIdentity: PassInfoMixin<MyAlgebraicIdentity> {
           if (!C) {
             C = dyn_cast<ConstantInt>(Op1);
             Other = Op0;
-          }
-
-          // If there are no constants, continue
-          if (!C) continue;
+            // If both the operands are not constants, continue
+            if (!C) continue;
+          }          
           
-          // C->getValue().isZero() is the same as C->getValue() == 0
-          if (C->getValue() == 0){
+          // if the constant is equal to zero, then the uses of the BinOp can
+          // be replaced with the value of the Other operator
+          if (C->getValue().isZero()){
             BinOp->replaceAllUsesWith(Other);
           }
         }
 
-        // SUB CASE
+        // SUB CASE:
+        // possible tests: x = 0 - 0, x = y - 0, x = 0 - y, x = t - y
         if (BinOp->getOpcode() == Instruction::Sub){
-          // first operator is not a constant, second operator is a constant
-          if (!dyn_cast<ConstantInt>(Op0) && dyn_cast<ConstantInt>(Op1)){
-            Value *First = Op0;
-            ConstantInt *Second = dyn_cast<ConstantInt>(Op1);
-            if (Second->getValue().isZero()){
-              BinOp->replaceAllUsesWith(First);
-            }
+          // the second operator needs to be zero to apply the optimization
+          if (dyn_cast<ConstantInt>(Op1)->getValue().isZero){
+              BinOp->replaceAllUsesWith(Op0);
           }
         }
 
         // MUL CASE
+        // possible tests: x = 1 * 4, x = y * 1, x = 1 * y, x = t * y
         if (BinOp->getOpcode() == Instruction::Mul){
           ConstantInt *C = dyn_cast<ConstantInt>(Op0);
           Value *Other = Op1;
@@ -65,10 +64,9 @@ struct MyAlgebraicIdentity: PassInfoMixin<MyAlgebraicIdentity> {
           if (!C) {
             C = dyn_cast<ConstantInt>(Op1);
             Other = Op0;
-          }
-
-          // If there are no constants, continue
-          if (!C) continue;
+            // If both the operands are not constants, continue
+            if (!C) continue;
+          } 
           
           if (C->getValue().isOne()){
             BinOp->replaceAllUsesWith(Other);
@@ -76,14 +74,11 @@ struct MyAlgebraicIdentity: PassInfoMixin<MyAlgebraicIdentity> {
         }
 
         // DIV CASE
+        // possible tests: x = 1 / 4, x = 4 / 1, x = y / 1, x = 1 / y, x = t / y
         if (BinOp->getOpcode() == Instruction::Div){
-          // first operator is not a constant, second operator is a constant
-          if (!dyn_cast<ConstantInt>(Op0) && dyn_cast<ConstantInt>(Op1)){
-            Value *First = Op0;
-            ConstantInt *Second = dyn_cast<ConstantInt>(Op1);
-            if (Second->getValue().isOne()){
-              BinOp->replaceAllUsesWith(First);
-            }
+          // the second operator needs to be equal to one
+          if (dyn_cast<ConstantInt>(Op1)->getValue().isOne()){
+              BinOp->replaceAllUsesWith(Op0);
           }
         }
 
