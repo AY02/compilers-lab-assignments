@@ -35,3 +35,5 @@ Casi matrioska:
 %5 = %4 sub 1
 
 Inoltre, in nessuno di queste ottimizzazioni gestiamo casi di overflow.
+I casi di overflow in realtà vanno bene anche se applichiamo le ottimizzazioni.
+Infatti, il comportamento "imprevedibile" c'è in entrambi i casi (ottimizzato o non), ma almeno eseguiamo istruzioni meno costose.
