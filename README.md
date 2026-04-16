@@ -29,24 +29,26 @@ Inoltre, somma e prodotto sono commutative, quindi vale:
 (a +* k) -/ k = (k +* a) -/ k
 
 Casi matrioska:
+%1 = qualcosa
 %2 = %1 add 1
 %3 = %2 add 1
 %4 = %3 sub 1
 %5 = %4 sub 1
-%6 = %3
+%6 = %5
 
+%1 = qualcosa
 %2 = %1 add 1
 %3 = %2 add 1
-%4 = %3 sub 1
+%4 = %3 sub 1 -- dead code
 %5 = %2 sub 1
-%6 = %3
+%6 = %5
 
+%1 = qualcosa
 %2 = %1 add 1
 %3 = %2 add 1
-%4 = %3 sub 1
-%5 = %2 sub 1
-%6 = %3
-%7 = %4
+%4 = %3 sub 1 -- dead code
+%5 = %2 sub 1 -- dead code
+%6 = %1
 
 
 Inoltre, in nessuno di queste ottimizzazioni gestiamo casi di overflow.
