@@ -52,6 +52,17 @@ define dso_local i32 @test_sub_wrong_order(i32 noundef %0) #0 {
   ret i32 %3
 }
 
+; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @matrioska_case(i32 noundef %0) #0 {
+  %2 = mul nsw i32 %0, 2
+  %3 = sub nsw i32 %2, 5
+  %4 = add nsw i32 %3, 2
+  %5 = sub nsw i32 %4, 2
+  %6 = add nsw i32 %5, 5
+  %7 = sdiv i32 %6, 2
+  ret i32 %7
+}
+
 attributes #0 = { noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 
 !llvm.module.flags = !{!0, !1, !2, !3, !4}

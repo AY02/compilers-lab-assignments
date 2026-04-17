@@ -115,6 +115,38 @@ define dso_local i32 @test_sub_wrong_order(i32 noundef %0) #0 {
   ret i32 %9
 }
 
+; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @matrioska_case(i32 noundef %0) #0 {
+  %2 = alloca i32, align 4
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca i32, align 4
+  %6 = alloca i32, align 4
+  %7 = alloca i32, align 4
+  %8 = alloca i32, align 4
+  store i32 %0, ptr %2, align 4
+  %9 = load i32, ptr %2, align 4
+  %10 = mul nsw i32 %9, 2
+  store i32 %10, ptr %3, align 4
+  %11 = load i32, ptr %3, align 4
+  %12 = sub nsw i32 %11, 5
+  store i32 %12, ptr %4, align 4
+  %13 = load i32, ptr %4, align 4
+  %14 = add nsw i32 %13, 2
+  store i32 %14, ptr %5, align 4
+  %15 = load i32, ptr %5, align 4
+  %16 = sub nsw i32 %15, 2
+  store i32 %16, ptr %6, align 4
+  %17 = load i32, ptr %6, align 4
+  %18 = add nsw i32 %17, 5
+  store i32 %18, ptr %7, align 4
+  %19 = load i32, ptr %7, align 4
+  %20 = sdiv i32 %19, 2
+  store i32 %20, ptr %8, align 4
+  %21 = load i32, ptr %8, align 4
+  ret i32 %21
+}
+
 attributes #0 = { noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 
 !llvm.module.flags = !{!0, !1, !2, !3, !4}

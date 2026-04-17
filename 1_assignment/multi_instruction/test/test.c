@@ -1,51 +1,62 @@
-// CASO 1: (x + k) - k = x
+// Test for Multi Instruction Optimization Pass
+
+// CASE 1: (x + k) - k = x
 int test_add_sub(int x) {
     int add = x + 5;
-    int sub = add - 5;
+    int sub = add - 5;    // should optimize --> x
     return sub;
 }
 
-// CASO 2: (k + x) - k = x
+// CASE 2: (k + x) - k = x
 int test_add_sub_comm(int x) {
     int add = 5 + x;
-    int sub = add - 5;
+    int sub = add - 5;    // should optimize --> x
     return sub;
 }
 
-// CASO 3: (x - k) + k = x
+// CASE 3: (x - k) + k = x
 int test_sub_add(int x) {
     int sub = x - 10;
-    int add = sub + 10;
+    int add = sub + 10;   // should optimize --> x
     return add;
 }
 
-// CASO 4: (x * k) / k = x (Divisione con segno)
+// CASE 4: (x * k) / k = x (Signed division)
 int test_mul_sdiv(int x) {
     int mul = x * 4;
-    int div = mul / 4;
+    int div = mul / 4;    // should optimize --> x
     return div;
 }
 
-// CASO 5: (x / k) * k = x
-// Nota: In C standard non c'è un modo diretto per forzare "sdiv exact",
-// ma Clang potrebbe dedurlo o generare una normale divisione. 
-// Il tuo pass salterà l'ottimizzazione se l'istruzione non è 'exact'.
+// CASE 5: (x / k) * k = x
+// Note: The pass will only optimize if the 'sdiv' is marked as 'exact'
 int test_sdiv_mul(int x) {
     int div = x / 8;
-    int mul = div * 8;
+    int mul = div * 8;    // should optimize --> x (if exact)
     return mul;
 }
 
-// CASO NEGATIVO 1: Costanti diverse
+// NEGATIVE CASE 1: Different constants
 int test_wrong_constants(int x) {
     int add = x + 5;
-    int sub = add - 4;
+    int sub = add - 4;    // no opt
     return sub;
 }
 
-// CASO NEGATIVO 3: Costante come primo operando nella sottrazione
+// NEGATIVE CASE 2: Constant as first operand in subtraction
 int test_sub_wrong_order(int x) {
     int sub = 10 - x;
-    int add = sub + 10;
+    int add = sub + 10;   // no opt
     return add;
+}
+
+// "MATRIOSKA" CASE: Multiple nested optimizations
+int matrioska_case(int x) {
+  int a = x * 2;
+  int b = a - 5;
+  int c = b + 2;
+  int d = c - 2;          // should optimize --> b
+  int e = d + 5;          // should optimize --> a
+  int f = e / 2;          // should optimize --> x
+  return f;
 }
