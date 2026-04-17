@@ -49,12 +49,12 @@ Note: This optimization step doesn't take into account the fact that the relativ
 **Signed Division (SDIV):**
 * `a / 2^n` $\rightarrow$ Replaced with `(a + bias) >> n` (Arithmetic Shift Right).
 * **Correction Logic:** C integer division truncates toward zero, while `AShr` truncates toward minus infinity. For negative dividends, a correction (bias) is added to ensure the result matches standard C semantics.
-* **Formula:** $$(a + (a < 0 ? (2^n - 1) : 0)) >> n$$
+* **Formula:** `(a + (a < 0 ? (2^n - 1) : 0)) >> n`
 
 ## Concluding Notes
 * **Constant Constraints:** Strictly limited to strictly positive integer constants (`ConstantInt > 0`).
 * **Division Constraints:** Optimized only when the divisor is a strictly positive integer power of two.
-* **Adjacency:** Adjacency cases (`2^n \pm 1$`) are **not** handled for division, only for multiplication.
+* **Adjacency:** Adjacency cases (`2^n \pm 1`) are **not** handled for division, only for multiplication.
 * **Architecture Independence:** The pass assumes these transformations are universally beneficial and does not query specific CPU cost models.
 
 ---
