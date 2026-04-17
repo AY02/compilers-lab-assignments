@@ -1,10 +1,10 @@
 # Optimization passes
+---
 
 ## 1. Algebraic Identity Optimization
----
+
 Le operazioni binarie algebriche, applicate con i rispettivi elementi neutri (o assorbenti) producono risultati identici a uno degli operandi, rendendole computazionalmente inutili. Questo passo di ottimizzazione individua le *algebraic identities* nelle istruzioni binarie di ogni funzione e sostituisce tutti gli usi del risultato direttamente con il valore equivalente, eliminando il costo dell'operazione stessa.
 Nota: Le istruzioni originali rese dead code dalla sostituzione degli usi a seguito delle ottimizzazioni non sono rimosse da questo passo, il cui scopo è esclusivamente quello di identificare e propagare le semplificazioni algebriche, lasciando a un ipotetico passo successivo il compito di ripulire il dead code risultante.
----
 
 ## Casi coperti
 
@@ -20,36 +20,6 @@ Nota: In nessuno di essi viene coperto il caso generale `a ⊕ b` privo di costa
 
 ---
 
-## Esempi di test e risultati
-
-### ADD
-| Espressione | Risultato |
-|-------------|-----------|
-| `x = a + 0` | Ottimizzato: gli usi di `x` vengono sostituiti con `a`; l'istruzione diventa dead code |
-| `x = a + b` | Non ottimizzato |
-
-### SUB
-| Espressione | Risultato |
-|-------------|-----------|
-| `x = a - 0` | Ottimizzato: gli usi di `x` vengono sostituiti con `a`; l'istruzione diventa dead code |
-| `x = 0 - a` | Non ottimizzato: il risultato non è equivalente ad alcuno degli operandi |
-
-### MUL
-| Espressione | Risultato |
-|-------------|-----------|
-| `x = a * 1` | Ottimizzato: gli usi di `x` vengono sostituiti con `a`; l'istruzione diventa dead code |
-| `x = a * 0` | Ottimizzato: gli usi di `x` vengono sostituiti con la costante `0`; l'istruzione diventa dead code |
-| `x = a * b` | Non ottimizzato |
-
-### DIV
-| Espressione | Risultato |
-|-------------|-----------|
-| `x = a / 1` | Ottimizzato: gli usi di `x` vengono sostituiti con `a`; l'istruzione diventa dead code |
-| `x = 0 / a` (con `a ≠ 0`) | Ottimizzato: gli usi di `x` vengono sostituiti con la costante `0`; l'istruzione diventa dead code |
-| `x = a / 0` | Non ottimizzato: divisione per zero, comportamento indefinito |
-
----
-
 ## Note conclusive
 
-Se necessarie
+L'attuale implementazione si limita alle costanti di tipo ConstantInt, non gestisce identità su valori in virgola mobile ConstantFP.
