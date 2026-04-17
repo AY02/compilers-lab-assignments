@@ -18,8 +18,10 @@ Nota: Le istruzioni originali rese dead code dalla sostituzione degli usi a segu
 
 Nota: In nessuno di essi viene coperto il caso generale `a ⊕ b` privo di costanti numeriche esplicite.
 
----
-
 ## Note conclusive
 
 L'attuale implementazione si limita alle costanti di tipo ConstantInt, non gestisce identità su valori in virgola mobile ConstantFP.
+
+---
+
+## 2. Strength Reduction Optimization
