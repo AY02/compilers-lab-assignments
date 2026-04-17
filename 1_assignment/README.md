@@ -1,7 +1,7 @@
 # Optimization passes
 
 ## 1. Algebraic Identity Optimization
-
+---
 Le operazioni binarie algebriche, applicate con i rispettivi elementi neutri (o assorbenti) producono risultati identici a uno degli operandi, rendendole computazionalmente inutili. Questo passo di ottimizzazione individua le *algebraic identities* nelle istruzioni binarie di ogni funzione e sostituisce tutti gli usi del risultato direttamente con il valore equivalente, eliminando il costo dell'operazione stessa.
 Nota: Le istruzioni originali rese dead code dalla sostituzione degli usi a seguito delle ottimizzazioni non sono rimosse da questo passo, il cui scopo è esclusivamente quello di identificare e propagare le semplificazioni algebriche, lasciando a un ipotetico passo successivo il compito di ripulire il dead code risultante.
 ---
