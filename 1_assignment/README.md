@@ -50,3 +50,18 @@ L'attuale implementazione si limita a costanti di tipo ConstantInt strettamente 
 
 ## 3. Multi Instruction Optimization
 
+Alcune sequenze di due istruzioni consecutive applicano e poi annullano la stessa operazione con la stessa costante, producendo un risultato equivalente all'operando originale. Questo passo di ottimizzazione individua tali coppie di istruzioni inverse all'interno di ogni basic block e sostituisce tutti gli usi del risultato della seconda istruzione direttamente con l'operando originale della prima, eliminando il costo della seconda operazione.
+ 
+Nota: poiché non è presente un passo di DCE, il passo verifica esplicitamente che l'istruzione corrente abbia ancora degli usi attivi prima di procedere con la sostituzione, per evitare di operare su istruzioni già rese dead code da ottimizzazioni precedenti.
+ 
+## Casi coperti
+ 
+**ADD dopo SUB / SUB dopo ADD**: Vengono ottimizzati i pattern `(a - k) + k` e `(a + k) - k`, sostituendo gli usi del risultato finale (solo della seconda istruzione) con `a`. Notare che nella sottrazione la costante deve comparire come secondo operando. I casi con la costante come primo operando (`k - a`, `k + a` nella seconda istruzione) non sono coperti in quanto non linearmente risolvibili in forma simmetrica.
+ 
+**MUL dopo DIV / DIV dopo MUL**: Viene ottimizzato il pattern `(a * k) / k` (--> `a`), sia per divisione con segno (SDIV) che senza segno (UDIV). Viene ottimizzato anche il pattern `(a / k) * k` (--> `a`), ma solo se la divisione originale è marcata come esatta (`isExact()`, il resto è garantito essere zero), mentre in caso contrario la moltiplicazione non annulla la divisione e non si procede.
+ 
+Nota: In tutti i casi, la costante delle due istruzioni deve essere il medesimo oggetto ConstantInt nel grafo IR (confronto per puntatore), ossia costanti con lo stesso valore numerico ma rappresentate da oggetti distinti non vengono riconosciute come uguali.
+ 
+## Note conclusive
+L'attuale implementazione effettua l'ottimizzazione in una sola esecuzione del passo, che scorre le istruzioni e, per le istruzioni che si annullano, sostituisce gli usi della seconda istruzione con l'operando originale della prima nelle istruzioni ancora da analizzare.
+Inoltre, opera esclusivamente all'interno del singolo basic block, non propaga l'analisi tra blocchi distinti. Si limita inoltre a costanti di tipo ConstantInt e a operatori aritmetici di base (ADD, SUB, MUL, UDIV, SDIV), non gestisce operazioni su valori in virgola mobile né operatori bitwise.
