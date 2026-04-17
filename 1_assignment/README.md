@@ -67,10 +67,10 @@ Some sequences of two consecutive instructions apply an operation and immediatel
 
 | Optimized Pattern | Condition | Result |
 | :--- | :--- | :--- |
-| `(a - n) + n` or `n + (a - k)` | Pointer equality of `n` | `a` |
-| `(a + n) - n` or `(n + a) - k` | Pointer equality of `n` | `a` |
-| `(a * n) / n` or `(n * a) / k` | Signed and Unsigned Div | `a` |
-| `(a / n) * n` or `n * (a / k)` | **Requires `isExact()`** | `a` |
+| `(a - n) + n` or `n + (a - n)` | Pointer equality of `n` | `a` |
+| `(a + n) - n` or `(n + a) - n` | Pointer equality of `n` | `a` |
+| `(a * n) / n` or `(n * a) / n` | Signed and Unsigned Div | `a` |
+| `(a / n) * n` or `n * (a / n)` | **Requires `isExact()`** | `a` |
  
 ## Concluding notes
 
