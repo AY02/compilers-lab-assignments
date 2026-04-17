@@ -116,10 +116,7 @@ struct MyMultiInstruction: PassInfoMixin<MyMultiInstruction> {
         }
 
         if (prev_const_op == curr_const_op) {
-          // There is no DCE, therefore we must ignore dead instructions.
-          if (!curr_instr.use_empty()) {
             curr_instr.replaceAllUsesWith(prev_op);
-          }
         }
 
       }

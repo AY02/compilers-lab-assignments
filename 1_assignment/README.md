@@ -73,8 +73,7 @@ Some sequences of two consecutive instructions apply an operation and immediatel
 ## Concluding notes
 
 * **Addition and Multiplication Commutativity:** The implementation fully supports **commutativity** for Addition (`ADD`) and Multiplication (`MUL`). The pass identifies these patterns regardless of whether the constant is the first or second operand in the involved instructions (where mathematically applicable).
-- **Subtraction and Division Constraints**: In subtraction and division, the constant `n` must appear as the second operand in the RHS. Cases where the constant is the first operand (e.g., `n - a`) are not covered because they are not linearly resolvable in a symmetric form (e.g., `(n - a) + n` results in `2 * n - a`).
-- **Exact Division**: Optimization of the `(a / n) * n` pattern occurs **only if** the original division is marked as exact (`isExact()`). Otherwise, the multiplication would not correctly reverse the integer division truncation (e.g., `(7 / 2) * 2 = 6`), thus preserving original semantics.
-- **Use Verification**: As no prior DCE pass is assumed, the pass explicitly verifies that the instruction still has active uses (`!use_empty()`) before proceeding.
+* **Subtraction and Division Constraints**: In subtraction and division, the constant `n` must appear as the second operand in the RHS. Cases where the constant is the first operand (e.g., `n - a`) are not covered because they are not linearly resolvable in a symmetric form (e.g., `(n - a) + n` results in `2 * n - a`).
+* **Exact Division**: Optimization of the `(a / n) * n` pattern occurs **only if** the original division is marked as exact (`isExact()`). Otherwise, the multiplication would not correctly reverse the integer division truncation (e.g., `(7 / 2) * 2 = 6`), thus preserving original semantics.
 * **Pointer Comparison**: The pass verifies that the `ConstantInt` objects in both instructions are the exact same instance in memory (pointer equality).
 * **No Inverse Bitwise:** Currently limited to basic arithmetic operators (`ADD`, `SUB`, `MUL`, `DIV`).
