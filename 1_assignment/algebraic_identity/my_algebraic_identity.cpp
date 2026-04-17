@@ -27,7 +27,7 @@ struct MyAlgebraicIdentity: PassInfoMixin<MyAlgebraicIdentity> {
         Value *Op1 = BinOp->getOperand(1);
         
         // ADD CASE: 
-        // possible tests: x = 0 + 0, x = y + 0, x = 0 + y, x = t + y
+        // possible tests: x = a + 0, x = 0 + a --> Ok | x = a + b --> no opt
         if (BinOp->getOpcode() == Instruction::Add){
           ConstantInt *C = dyn_cast<ConstantInt>(Op0);
           Value *Other = Op1;
@@ -47,17 +47,18 @@ struct MyAlgebraicIdentity: PassInfoMixin<MyAlgebraicIdentity> {
         }
 
         // SUB CASE:
-        // possible tests: x = 0 - 0, x = y - 0, x = 0 - y, x = t - y
+        // possible tests: x = a - 0 --> Ok | x = 0 - a, x = a - b --> no opt
         if (BinOp->getOpcode() == Instruction::Sub){
           // the second operator needs to be zero to apply the optimization
           ConstantInt *C = dyn_cast<ConstantInt>(Op1);
-          if (C && C->isZero()){
+          if (C && C->getValue().isZero()){
               BinOp->replaceAllUsesWith(Op0);
           }
         }
 
         // MUL CASE
-        // possible tests: x = 1 * 4, x = y * 1, x = 1 * y, x = t * y
+        // possible tests: x = a * 1, x = 1 * a, x = 0 * a, x = a * 0 --> Ok 
+        // x = a * b --> no opt
         if (BinOp->getOpcode() == Instruction::Mul){
           ConstantInt *C = dyn_cast<ConstantInt>(Op0);
           Value *Other = Op1;
@@ -69,18 +70,33 @@ struct MyAlgebraicIdentity: PassInfoMixin<MyAlgebraicIdentity> {
             if (!C) continue;
           } 
           
-          if (C->getValue().isOne()){
+          if (C->getValue().isZero()){
+            BinOp->replaceAllUsesWith(C);
+          }
+          else if (C->getValue().isOne()){
             BinOp->replaceAllUsesWith(Other);
           }
         }
 
         // DIV CASE
-        // possible tests: x = 1 / 4, x = 4 / 1, x = y / 1, x = 1 / y, x = t / y
+        // possible tests: x = a / 1,  x = 0 / a --> Ok 
+        // x = 1 / a,  x = 0 / 0,  x = a / 0,  x = a / b --> no opt
         if (BinOp->getOpcode() == Instruction::SDiv || BinOp->getOpcode() == Instruction::UDiv){
-          // the second operator needs to be equal to one
-          ConstantInt *C = dyn_cast<ConstantInt>(Op1);
-          if (C && C->isOne()){
+          ConstantInt *C0 = dyn_cast<ConstantInt>(Op0);
+          ConstantInt *C1 = dyn_cast<ConstantInt>(Op1);
+
+          // Case 0 / y (with y != 0)
+          // if the first operand is equal to zero (and the second is not) --> second operand
+          if (C0 && C0->getValue().isZero() && !(C1 && C1->getValue().isZero())) {
               BinOp->replaceAllUsesWith(Op0);
+              continue;
+          }
+
+          // Case y / 1
+          // if the second operand is equal to one --> first operand
+          if (C1 && C1->getValue().isOne()) {
+              BinOp->replaceAllUsesWith(Op0);
+              continue;
           }
         }
 
