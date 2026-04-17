@@ -33,7 +33,7 @@ Binary algebraic operations applied with a neutral or absorbing constant can be 
 ## 2. Strength Reduction Optimization
 
 This pass identifies computationally expensive arithmetic operations (multiplications and divisions) and replaces them with lower-latency sequences of bitwise shifts, additions, and subtractions.
-The pass intervenes when one of the operands is an exact power of two (`2^n`) or a value adjacent to a power of two (`2^n \pm 1`):
+The pass intervenes when one of the operands is an exact power of two (`2^n`) or a value adjacent to a power of two (`2^n +- 1`):
 Note: This optimization step doesn't take into account the fact that the relative cost of operations like multiplication and shift may vary on different CPUs. Instead, it's assumed that, in a general and architecture-independent manner, the proposed transformations are still advantageous.
  
 ## Covered cases
@@ -54,7 +54,7 @@ Note: This optimization step doesn't take into account the fact that the relativ
 ## Concluding Notes
 * **Constant Constraints:** Strictly limited to strictly positive integer constants (`ConstantInt > 0`).
 * **Division Constraints:** Optimized only when the divisor is a strictly positive integer power of two.
-* **Adjacency:** Adjacency cases (`2^n \pm 1`) are **not** handled for division, only for multiplication.
+* **Adjacency:** Adjacency cases (`2^n +- 1`) are **not** handled for division, only for multiplication.
 * **Architecture Independence:** The pass assumes these transformations are universally beneficial and does not query specific CPU cost models.
 
 ---
