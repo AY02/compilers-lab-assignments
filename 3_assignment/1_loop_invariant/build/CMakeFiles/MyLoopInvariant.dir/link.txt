@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC  -fno-rtti -shared -Wl,-soname,libMyLoopInvariant.so -o libMyLoopInvariant.so "CMakeFiles/MyLoopInvariant.dir/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/3_assignment/1_loop_invariant/my_loop_invariant.cpp.o"
