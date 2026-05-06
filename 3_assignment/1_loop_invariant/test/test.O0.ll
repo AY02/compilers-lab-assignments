@@ -74,6 +74,109 @@ define dso_local i32 @test_nested_loops(i32 noundef %0, i32 noundef %1) #0 {
 }
 
 ; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @test_bottom_up_1(i32 noundef %0, i32 noundef %1) #0 {
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca i32, align 4
+  %6 = alloca i32, align 4
+  %7 = alloca i32, align 4
+  store i32 %0, ptr %3, align 4
+  store i32 %1, ptr %4, align 4
+  store i32 0, ptr %5, align 4
+  br label %8
+
+8:                                                ; preds = %22, %2
+  %9 = load i32, ptr %5, align 4
+  %10 = icmp slt i32 %9, 10
+  br i1 %10, label %11, label %25
+
+11:                                               ; preds = %8
+  store i32 0, ptr %6, align 4
+  br label %12
+
+12:                                               ; preds = %18, %11
+  %13 = load i32, ptr %6, align 4
+  %14 = icmp slt i32 %13, 10
+  br i1 %14, label %15, label %21
+
+15:                                               ; preds = %12
+  %16 = load i32, ptr %5, align 4
+  %17 = add nsw i32 %16, 15
+  store i32 %17, ptr %7, align 4
+  br label %18
+
+18:                                               ; preds = %15
+  %19 = load i32, ptr %6, align 4
+  %20 = add nsw i32 %19, 1
+  store i32 %20, ptr %6, align 4
+  br label %12, !llvm.loop !9
+
+21:                                               ; preds = %12
+  br label %22
+
+22:                                               ; preds = %21
+  %23 = load i32, ptr %5, align 4
+  %24 = add nsw i32 %23, 1
+  store i32 %24, ptr %5, align 4
+  br label %8, !llvm.loop !10
+
+25:                                               ; preds = %8
+  ret i32 0
+}
+
+; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @test_bottom_up_2(i32 noundef %0, i32 noundef %1) #0 {
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca i32, align 4
+  %6 = alloca i32, align 4
+  %7 = alloca i32, align 4
+  store i32 %0, ptr %3, align 4
+  store i32 %1, ptr %4, align 4
+  store i32 0, ptr %5, align 4
+  br label %8
+
+8:                                                ; preds = %23, %2
+  %9 = load i32, ptr %5, align 4
+  %10 = icmp slt i32 %9, 10
+  br i1 %10, label %11, label %26
+
+11:                                               ; preds = %8
+  store i32 0, ptr %6, align 4
+  br label %12
+
+12:                                               ; preds = %19, %11
+  %13 = load i32, ptr %6, align 4
+  %14 = icmp slt i32 %13, 10
+  br i1 %14, label %15, label %22
+
+15:                                               ; preds = %12
+  %16 = load i32, ptr %3, align 4
+  %17 = load i32, ptr %4, align 4
+  %18 = add nsw i32 %16, %17
+  store i32 %18, ptr %7, align 4
+  br label %19
+
+19:                                               ; preds = %15
+  %20 = load i32, ptr %6, align 4
+  %21 = add nsw i32 %20, 1
+  store i32 %21, ptr %6, align 4
+  br label %12, !llvm.loop !11
+
+22:                                               ; preds = %12
+  br label %23
+
+23:                                               ; preds = %22
+  %24 = load i32, ptr %5, align 4
+  %25 = add nsw i32 %24, 1
+  store i32 %25, ptr %5, align 4
+  br label %8, !llvm.loop !12
+
+26:                                               ; preds = %8
+  ret i32 0
+}
+
+; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @test_invariants_chain(i32 noundef %0, i32 noundef %1) #0 {
   %3 = alloca i32, align 4
   %4 = alloca i32, align 4
@@ -116,7 +219,7 @@ define dso_local i32 @test_invariants_chain(i32 noundef %0, i32 noundef %1) #0 {
   %27 = load i32, ptr %6, align 4
   %28 = add nsw i32 %27, 1
   store i32 %28, ptr %6, align 4
-  br label %10, !llvm.loop !9
+  br label %10, !llvm.loop !13
 
 29:                                               ; preds = %10
   %30 = load i32, ptr %5, align 4
@@ -177,7 +280,7 @@ define dso_local i32 @test_branch_phi(i32 noundef %0, i32 noundef %1, i32 nounde
   %32 = load i32, ptr %9, align 4
   %33 = add nsw i32 %32, 1
   store i32 %33, ptr %9, align 4
-  br label %11, !llvm.loop !10
+  br label %11, !llvm.loop !14
 
 34:                                               ; preds = %11
   %35 = load i32, ptr %7, align 4
@@ -229,7 +332,7 @@ define dso_local i32 @test_conditional_mutation(i32 noundef %0, i32 noundef %1) 
   %25 = load i32, ptr %7, align 4
   %26 = add nsw i32 %25, 1
   store i32 %26, ptr %7, align 4
-  br label %10, !llvm.loop !11
+  br label %10, !llvm.loop !15
 
 27:                                               ; preds = %10
   %28 = load i32, ptr %6, align 4
@@ -251,42 +354,42 @@ define dso_local void @test_phi_invariant(i32 noundef %0, i32 noundef %1) #0 {
   %11 = add nsw i32 %9, %10
   store i32 %11, ptr %5, align 4
   store i32 0, ptr %6, align 4
-  store i32 0, ptr %7, align 4
+  store i32 0, ptr %8, align 4
   br label %12
 
 12:                                               ; preds = %27, %2
-  %13 = load i32, ptr %7, align 4
+  %13 = load i32, ptr %8, align 4
   %14 = icmp slt i32 %13, 10
   br i1 %14, label %15, label %30
 
 15:                                               ; preds = %12
-  %16 = load i32, ptr %7, align 4
+  %16 = load i32, ptr %8, align 4
   %17 = srem i32 %16, 2
   %18 = icmp eq i32 %17, 0
   br i1 %18, label %19, label %21
 
 19:                                               ; preds = %15
   %20 = load i32, ptr %5, align 4
-  store i32 %20, ptr %8, align 4
+  store i32 %20, ptr %7, align 4
   br label %23
 
 21:                                               ; preds = %15
   %22 = load i32, ptr %5, align 4
-  store i32 %22, ptr %8, align 4
+  store i32 %22, ptr %7, align 4
   br label %23
 
 23:                                               ; preds = %21, %19
-  %24 = load i32, ptr %8, align 4
+  %24 = load i32, ptr %7, align 4
   %25 = load i32, ptr %6, align 4
   %26 = add nsw i32 %25, %24
   store i32 %26, ptr %6, align 4
   br label %27
 
 27:                                               ; preds = %23
-  %28 = load i32, ptr %7, align 4
+  %28 = load i32, ptr %8, align 4
   %29 = add nsw i32 %28, 1
-  store i32 %29, ptr %7, align 4
-  br label %12, !llvm.loop !12
+  store i32 %29, ptr %8, align 4
+  br label %12, !llvm.loop !16
 
 30:                                               ; preds = %12
   ret void
@@ -310,3 +413,7 @@ attributes #0 = { noinline nounwind uwtable "frame-pointer"="all" "min-legal-vec
 !10 = distinct !{!10, !7}
 !11 = distinct !{!11, !7}
 !12 = distinct !{!12, !7}
+!13 = distinct !{!13, !7}
+!14 = distinct !{!14, !7}
+!15 = distinct !{!15, !7}
+!16 = distinct !{!16, !7}

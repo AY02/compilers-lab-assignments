@@ -13,6 +13,34 @@ int test_nested_loops(int a, int b) {
   return sum;
 }
 
+int test_bottom_up_1(int a, int b) {
+  // Outer Loop
+  for (int i = 0; i < 10; i++) {
+    // Inner Loop
+    for (int j = 0; j < 10; j++) {
+      int x = i + 15; // Invariant with respect to the inner loop, but variant
+                      // with respect to the outer loop.
+    }
+  }
+  return 0;
+}
+
+// With Loop-Invariant Analysis alone (without moving the instruction to the
+// pre-header), the inner instruction will not be loop-invariant with respect to
+// the outer loop.
+int test_bottom_up_2(int a, int b) {
+  // Outer Loop
+  for (int i = 0; i < 10; i++) {
+    // Inner Loop
+    for (int j = 0; j < 10; j++) {
+      int x = a + b;  // Invariant with respect to the inner loop and invariant
+                      // with respect to the outer loop (if it is moved to the
+                      // pre-header).
+    }
+  }
+  return 0;
+}
+
 int test_invariants_chain(int a, int b) {
   int sum = 0;
   for (int i = 0; i < 10; i++) {

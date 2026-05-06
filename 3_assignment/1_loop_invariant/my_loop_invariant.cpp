@@ -151,6 +151,11 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
       // LI.getLoopFor(BB) returns the innermost loop to which BB belongs.
       // If we are in an outer loop, then we skip the blocks belonging to the
       // inner loops.
+      // These two lines should be commented out if only Loop-Invariant Analysis
+      // is being performed (without Code Motion).
+      // Otherwise, instructions considered loop-invariant within an inner loop
+      // will never be considered loop-invariant with respect to the outer loop
+      // (see the test cases).
       if (LI.getLoopFor(BB) != L)
         continue;
 
