@@ -156,6 +156,8 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
       // Otherwise, instructions considered loop-invariant within an inner loop
       // will never be considered loop-invariant with respect to the outer loop
       // (see the test cases).
+      // In other words, we analyse the instructions only in relation to the
+      // innermost loop to which they belong.
       if (LI.getLoopFor(BB) != L)
         continue;
 
