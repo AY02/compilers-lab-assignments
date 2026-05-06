@@ -115,7 +115,7 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
     // considered loop-invariant as it uses x, which has not yet been labelled
     // as such.
     // We need to sort the nodes in the loop using Reverse Post-Order DFS
-    // Traversal (ROP DFS Traversal): we visit the predecessors (which contain
+    // Traversal (RPO DFS Traversal): we visit the predecessors (which contain
     // the definitions) first, and then the successors (which contain the uses).
     LoopBlocksRPO LBRPO(L);
     LBRPO.perform(&LI); // Traverse the loop blocks and store the DFS result.
