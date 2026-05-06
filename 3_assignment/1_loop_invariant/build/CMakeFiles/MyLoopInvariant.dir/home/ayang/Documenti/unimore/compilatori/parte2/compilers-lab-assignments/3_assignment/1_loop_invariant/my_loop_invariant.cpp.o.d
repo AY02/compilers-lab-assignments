@@ -1,18 +1,26 @@
 CMakeFiles/MyLoopInvariant.dir/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/3_assignment/1_loop_invariant/my_loop_invariant.cpp.o: \
  /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/3_assignment/1_loop_invariant/my_loop_invariant.cpp \
  /usr/include/stdc-predef.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/IR/LegacyPassManager.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/CBindingWrapping.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm-c/Types.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm-c/DataTypes.h \
- /usr/include/inttypes.h /usr/include/features.h \
- /usr/include/features-time64.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Passes/PassBuilder.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Analysis/CGSCCPassManager.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/MapVector.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/DenseMap.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/DenseMapInfo.h \
+ /usr/include/c++/14/cassert \
+ /usr/include/x86_64-linux-gnu/c++/14/bits/c++config.h \
+ /usr/include/x86_64-linux-gnu/c++/14/bits/os_defines.h \
+ /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/x86_64-linux-gnu/bits/wordsize.h \
  /usr/include/x86_64-linux-gnu/bits/timesize.h \
  /usr/include/x86_64-linux-gnu/sys/cdefs.h \
  /usr/include/x86_64-linux-gnu/bits/long-double.h \
  /usr/include/x86_64-linux-gnu/gnu/stubs.h \
  /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
+ /usr/include/x86_64-linux-gnu/c++/14/bits/cpu_defines.h \
+ /usr/include/c++/14/pstl/pstl_config.h /usr/include/assert.h \
+ /usr/include/c++/14/cstddef \
+ /usr/lib/gcc/x86_64-linux-gnu/14/include/stddef.h \
+ /usr/include/c++/14/bits/version.h /usr/include/c++/14/cstdint \
  /usr/lib/gcc/x86_64-linux-gnu/14/include/stdint.h /usr/include/stdint.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/x86_64-linux-gnu/bits/types.h \
@@ -22,16 +30,51 @@ CMakeFiles/MyLoopInvariant.dir/home/ayang/Documenti/unimore/compilatori/parte2/c
  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
+ /usr/include/c++/14/tuple /usr/include/c++/14/bits/stl_pair.h \
+ /usr/include/c++/14/type_traits /usr/include/c++/14/bits/move.h \
+ /usr/include/c++/14/bits/utility.h \
+ /usr/include/c++/14/bits/uses_allocator.h \
+ /usr/include/c++/14/bits/invoke.h /usr/include/c++/14/utility \
+ /usr/include/c++/14/bits/stl_relops.h \
+ /usr/include/c++/14/initializer_list \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/EpochTracker.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Config/abi-breaking.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/AlignOf.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/Compiler.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Config/llvm-config.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/MathExtras.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/bit.h \
+ /usr/include/c++/14/limits /usr/include/endian.h \
+ /usr/include/x86_64-linux-gnu/bits/endian.h \
+ /usr/include/x86_64-linux-gnu/bits/endianness.h \
+ /usr/include/x86_64-linux-gnu/bits/byteswap.h \
+ /usr/include/x86_64-linux-gnu/bits/uintn-identity.h \
+ /usr/include/c++/14/climits \
+ /usr/lib/gcc/x86_64-linux-gnu/14/include/limits.h \
+ /usr/lib/gcc/x86_64-linux-gnu/14/include/syslimits.h \
+ /usr/include/limits.h /usr/include/x86_64-linux-gnu/bits/posix1_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/local_lim.h \
+ /usr/include/linux/limits.h \
+ /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h \
+ /usr/include/x86_64-linux-gnu/bits/posix2_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/xopen_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/uio_lim.h /usr/include/c++/14/cstring \
+ /usr/include/string.h \
+ /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
+ /usr/include/strings.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/MemAlloc.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/ErrorHandling.h \
+ /usr/include/c++/14/cstdlib /usr/include/stdlib.h \
+ /usr/include/x86_64-linux-gnu/bits/waitflags.h \
+ /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
+ /usr/include/x86_64-linux-gnu/bits/floatn.h \
+ /usr/include/x86_64-linux-gnu/bits/floatn-common.h \
  /usr/include/x86_64-linux-gnu/sys/types.h \
  /usr/include/x86_64-linux-gnu/bits/types/clock_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/time_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/timer_t.h \
- /usr/lib/gcc/x86_64-linux-gnu/14/include/stddef.h /usr/include/endian.h \
- /usr/include/x86_64-linux-gnu/bits/endian.h \
- /usr/include/x86_64-linux-gnu/bits/endianness.h \
- /usr/include/x86_64-linux-gnu/bits/byteswap.h \
- /usr/include/x86_64-linux-gnu/bits/uintn-identity.h \
  /usr/include/x86_64-linux-gnu/sys/select.h \
  /usr/include/x86_64-linux-gnu/bits/select.h \
  /usr/include/x86_64-linux-gnu/bits/types/sigset_t.h \
@@ -43,72 +86,54 @@ CMakeFiles/MyLoopInvariant.dir/home/ayang/Documenti/unimore/compilatori/parte2/c
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
  /usr/include/x86_64-linux-gnu/bits/atomic_wide_counter.h \
  /usr/include/x86_64-linux-gnu/bits/struct_mutex.h \
- /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm-c/ExternC.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/Casting.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/Compiler.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Config/llvm-config.h \
+ /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h /usr/include/alloca.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
+ /usr/include/c++/14/bits/std_abs.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/ReverseIteration.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/PointerLikeTypeTraits.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/DataTypes.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm-c/DataTypes.h \
+ /usr/include/inttypes.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/type_traits.h \
- /usr/include/c++/14/type_traits \
- /usr/include/x86_64-linux-gnu/c++/14/bits/c++config.h \
- /usr/include/x86_64-linux-gnu/c++/14/bits/os_defines.h \
- /usr/include/x86_64-linux-gnu/c++/14/bits/cpu_defines.h \
- /usr/include/c++/14/pstl/pstl_config.h \
- /usr/include/c++/14/bits/version.h /usr/include/c++/14/utility \
- /usr/include/c++/14/bits/stl_relops.h \
- /usr/include/c++/14/bits/stl_pair.h /usr/include/c++/14/bits/move.h \
- /usr/include/c++/14/bits/utility.h /usr/include/c++/14/initializer_list \
- /usr/include/c++/14/cassert /usr/include/assert.h \
- /usr/include/c++/14/memory /usr/include/c++/14/bits/memoryfwd.h \
- /usr/include/c++/14/bits/allocator.h \
- /usr/include/x86_64-linux-gnu/c++/14/bits/c++allocator.h \
- /usr/include/c++/14/bits/new_allocator.h /usr/include/c++/14/new \
- /usr/include/c++/14/bits/exception.h \
+ /usr/include/c++/14/algorithm /usr/include/c++/14/bits/stl_algobase.h \
  /usr/include/c++/14/bits/functexcept.h \
  /usr/include/c++/14/bits/exception_defines.h \
- /usr/include/c++/14/bits/stl_tempbuf.h \
- /usr/include/c++/14/bits/stl_construct.h \
+ /usr/include/c++/14/bits/cpp_type_traits.h \
+ /usr/include/c++/14/ext/type_traits.h \
+ /usr/include/c++/14/ext/numeric_traits.h \
  /usr/include/c++/14/bits/stl_iterator_base_types.h \
  /usr/include/c++/14/bits/stl_iterator_base_funcs.h \
  /usr/include/c++/14/bits/concept_check.h \
  /usr/include/c++/14/debug/assertions.h \
- /usr/include/c++/14/ext/numeric_traits.h \
- /usr/include/c++/14/bits/cpp_type_traits.h \
- /usr/include/c++/14/ext/type_traits.h \
- /usr/include/c++/14/bits/stl_uninitialized.h \
- /usr/include/c++/14/bits/stl_algobase.h \
  /usr/include/c++/14/bits/stl_iterator.h \
  /usr/include/c++/14/bits/ptr_traits.h /usr/include/c++/14/debug/debug.h \
  /usr/include/c++/14/bits/predefined_ops.h /usr/include/c++/14/bit \
- /usr/include/c++/14/concepts /usr/include/c++/14/ext/alloc_traits.h \
- /usr/include/c++/14/bits/alloc_traits.h \
- /usr/include/c++/14/bits/stl_raw_storage_iter.h \
- /usr/include/c++/14/bits/align.h \
- /usr/include/c++/14/bits/uses_allocator.h \
- /usr/include/c++/14/bits/unique_ptr.h /usr/include/c++/14/tuple \
- /usr/include/c++/14/bits/invoke.h \
- /usr/include/c++/14/bits/stl_function.h \
- /usr/include/c++/14/backward/binders.h \
- /usr/include/c++/14/bits/functional_hash.h \
- /usr/include/c++/14/bits/hash_bytes.h \
- /usr/include/c++/14/bits/shared_ptr.h /usr/include/c++/14/iosfwd \
+ /usr/include/c++/14/concepts /usr/include/c++/14/bits/stl_algo.h \
+ /usr/include/c++/14/bits/algorithmfwd.h \
+ /usr/include/c++/14/bits/stl_heap.h \
+ /usr/include/c++/14/bits/uniform_int_dist.h \
+ /usr/include/c++/14/bits/stl_tempbuf.h /usr/include/c++/14/new \
+ /usr/include/c++/14/bits/exception.h \
+ /usr/include/c++/14/bits/stl_construct.h \
+ /usr/include/c++/14/pstl/glue_algorithm_defs.h \
+ /usr/include/c++/14/pstl/execution_defs.h /usr/include/c++/14/iterator \
+ /usr/include/c++/14/bits/stream_iterator.h /usr/include/c++/14/iosfwd \
  /usr/include/c++/14/bits/requires_hosted.h \
- /usr/include/c++/14/bits/stringfwd.h /usr/include/c++/14/bits/postypes.h \
+ /usr/include/c++/14/bits/stringfwd.h \
+ /usr/include/c++/14/bits/memoryfwd.h /usr/include/c++/14/bits/postypes.h \
  /usr/include/c++/14/cwchar /usr/include/wchar.h \
- /usr/include/x86_64-linux-gnu/bits/floatn.h \
- /usr/include/x86_64-linux-gnu/bits/floatn-common.h \
  /usr/lib/gcc/x86_64-linux-gnu/14/include/stdarg.h \
  /usr/include/x86_64-linux-gnu/bits/types/wint_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__FILE.h \
  /usr/include/x86_64-linux-gnu/bits/types/FILE.h \
- /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
- /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
- /usr/include/c++/14/bits/shared_ptr_base.h /usr/include/c++/14/typeinfo \
- /usr/include/c++/14/bits/allocated_ptr.h \
- /usr/include/c++/14/bits/refwrap.h \
- /usr/include/c++/14/ext/aligned_buffer.h \
+ /usr/include/c++/14/bits/streambuf_iterator.h \
+ /usr/include/c++/14/streambuf /usr/include/c++/14/bits/localefwd.h \
+ /usr/include/x86_64-linux-gnu/c++/14/bits/c++locale.h \
+ /usr/include/c++/14/clocale /usr/include/locale.h \
+ /usr/include/x86_64-linux-gnu/bits/locale.h /usr/include/c++/14/cctype \
+ /usr/include/ctype.h /usr/include/c++/14/bits/ios_base.h \
  /usr/include/c++/14/ext/atomicity.h \
  /usr/include/x86_64-linux-gnu/c++/14/bits/gthr.h \
  /usr/include/x86_64-linux-gnu/c++/14/bits/gthr-default.h \
@@ -130,69 +155,24 @@ CMakeFiles/MyLoopInvariant.dir/home/ayang/Documenti/unimore/compilatori/parte2/c
  /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
  /usr/include/x86_64-linux-gnu/bits/setjmp.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h \
- /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h \
  /usr/include/x86_64-linux-gnu/c++/14/bits/atomic_word.h \
  /usr/include/x86_64-linux-gnu/sys/single_threaded.h \
- /usr/include/c++/14/ext/concurrence.h /usr/include/c++/14/exception \
- /usr/include/c++/14/bits/exception_ptr.h \
- /usr/include/c++/14/bits/cxxabi_init_exception.h \
- /usr/include/c++/14/bits/nested_exception.h \
- /usr/include/c++/14/bits/shared_ptr_atomic.h \
- /usr/include/c++/14/bits/atomic_base.h \
- /usr/include/c++/14/bits/atomic_lockfree_defines.h \
- /usr/include/c++/14/backward/auto_ptr.h \
- /usr/include/c++/14/pstl/glue_memory_defs.h \
- /usr/include/c++/14/pstl/execution_defs.h /usr/include/c++/14/optional \
- /usr/include/c++/14/bits/enable_special_members.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Passes/PassBuilder.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Analysis/CGSCCPassManager.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/MapVector.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/DenseMap.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/DenseMapInfo.h \
- /usr/include/c++/14/cstddef /usr/include/c++/14/cstdint \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/EpochTracker.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Config/abi-breaking.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/AlignOf.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/MathExtras.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/bit.h \
- /usr/include/c++/14/limits /usr/include/c++/14/climits \
- /usr/lib/gcc/x86_64-linux-gnu/14/include/limits.h \
- /usr/lib/gcc/x86_64-linux-gnu/14/include/syslimits.h \
- /usr/include/limits.h /usr/include/x86_64-linux-gnu/bits/posix1_lim.h \
- /usr/include/x86_64-linux-gnu/bits/local_lim.h \
- /usr/include/linux/limits.h \
- /usr/include/x86_64-linux-gnu/bits/posix2_lim.h \
- /usr/include/x86_64-linux-gnu/bits/xopen_lim.h \
- /usr/include/x86_64-linux-gnu/bits/uio_lim.h /usr/include/c++/14/cstring \
- /usr/include/string.h /usr/include/strings.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/MemAlloc.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/ErrorHandling.h \
- /usr/include/c++/14/cstdlib /usr/include/stdlib.h \
- /usr/include/x86_64-linux-gnu/bits/waitflags.h \
- /usr/include/x86_64-linux-gnu/bits/waitstatus.h /usr/include/alloca.h \
- /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
- /usr/include/c++/14/bits/std_abs.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/ReverseIteration.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/PointerLikeTypeTraits.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/DataTypes.h \
- /usr/include/c++/14/algorithm /usr/include/c++/14/bits/stl_algo.h \
- /usr/include/c++/14/bits/algorithmfwd.h \
- /usr/include/c++/14/bits/stl_heap.h \
- /usr/include/c++/14/bits/uniform_int_dist.h \
- /usr/include/c++/14/pstl/glue_algorithm_defs.h \
- /usr/include/c++/14/iterator /usr/include/c++/14/bits/stream_iterator.h \
- /usr/include/c++/14/bits/streambuf_iterator.h \
- /usr/include/c++/14/streambuf /usr/include/c++/14/bits/localefwd.h \
- /usr/include/x86_64-linux-gnu/c++/14/bits/c++locale.h \
- /usr/include/c++/14/clocale /usr/include/locale.h \
- /usr/include/x86_64-linux-gnu/bits/locale.h /usr/include/c++/14/cctype \
- /usr/include/ctype.h /usr/include/c++/14/bits/ios_base.h \
  /usr/include/c++/14/bits/locale_classes.h /usr/include/c++/14/string \
  /usr/include/c++/14/bits/char_traits.h \
+ /usr/include/c++/14/bits/allocator.h \
+ /usr/include/x86_64-linux-gnu/c++/14/bits/c++allocator.h \
+ /usr/include/c++/14/bits/new_allocator.h \
  /usr/include/c++/14/bits/ostream_insert.h \
  /usr/include/c++/14/bits/cxxabi_forced.h \
+ /usr/include/c++/14/bits/stl_function.h \
+ /usr/include/c++/14/backward/binders.h \
+ /usr/include/c++/14/bits/refwrap.h \
  /usr/include/c++/14/bits/range_access.h \
- /usr/include/c++/14/bits/basic_string.h /usr/include/c++/14/string_view \
+ /usr/include/c++/14/bits/basic_string.h \
+ /usr/include/c++/14/ext/alloc_traits.h \
+ /usr/include/c++/14/bits/alloc_traits.h /usr/include/c++/14/string_view \
+ /usr/include/c++/14/bits/functional_hash.h \
+ /usr/include/c++/14/bits/hash_bytes.h \
  /usr/include/c++/14/bits/string_view.tcc \
  /usr/include/c++/14/ext/string_conversions.h /usr/include/c++/14/cstdio \
  /usr/include/stdio.h /usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h \
@@ -212,24 +192,43 @@ CMakeFiles/MyLoopInvariant.dir/home/ayang/Documenti/unimore/compilatori/parte2/c
  /usr/include/c++/14/bits/locale_classes.tcc \
  /usr/include/c++/14/system_error \
  /usr/include/x86_64-linux-gnu/c++/14/bits/error_constants.h \
- /usr/include/c++/14/stdexcept /usr/include/c++/14/bits/streambuf.tcc \
+ /usr/include/c++/14/stdexcept /usr/include/c++/14/exception \
+ /usr/include/c++/14/bits/exception_ptr.h \
+ /usr/include/c++/14/bits/cxxabi_init_exception.h \
+ /usr/include/c++/14/typeinfo /usr/include/c++/14/bits/nested_exception.h \
+ /usr/include/c++/14/bits/streambuf.tcc \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/SmallVector.h \
  /usr/include/c++/14/functional /usr/include/c++/14/bits/std_function.h \
  /usr/include/c++/14/unordered_map \
  /usr/include/c++/14/bits/unordered_map.h \
  /usr/include/c++/14/bits/hashtable.h \
  /usr/include/c++/14/bits/hashtable_policy.h \
+ /usr/include/c++/14/ext/aligned_buffer.h \
+ /usr/include/c++/14/bits/enable_special_members.h \
  /usr/include/c++/14/bits/node_handle.h \
  /usr/include/c++/14/bits/erase_if.h /usr/include/c++/14/vector \
+ /usr/include/c++/14/bits/stl_uninitialized.h \
  /usr/include/c++/14/bits/stl_vector.h \
  /usr/include/c++/14/bits/stl_bvector.h \
  /usr/include/c++/14/bits/vector.tcc /usr/include/c++/14/array \
- /usr/include/c++/14/compare \
+ /usr/include/c++/14/compare /usr/include/c++/14/memory \
+ /usr/include/c++/14/bits/stl_raw_storage_iter.h \
+ /usr/include/c++/14/bits/align.h /usr/include/c++/14/bits/unique_ptr.h \
+ /usr/include/c++/14/bits/shared_ptr.h \
+ /usr/include/c++/14/bits/shared_ptr_base.h \
+ /usr/include/c++/14/bits/allocated_ptr.h \
+ /usr/include/c++/14/ext/concurrence.h \
+ /usr/include/c++/14/bits/shared_ptr_atomic.h \
+ /usr/include/c++/14/bits/atomic_base.h \
+ /usr/include/c++/14/bits/atomic_lockfree_defines.h \
+ /usr/include/c++/14/backward/auto_ptr.h \
+ /usr/include/c++/14/pstl/glue_memory_defs.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Analysis/LazyCallGraph.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/ArrayRef.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/Hashing.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/SwapByteOrder.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/STLForwardCompat.h \
+ /usr/include/c++/14/optional \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/STLExtras.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/ADL.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/STLFunctionalExtras.h \
@@ -248,6 +247,8 @@ CMakeFiles/MyLoopInvariant.dir/home/ayang/Documenti/unimore/compilatori/parte2/c
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/AllocatorBase.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/Twine.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/IR/Attributes.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm-c/Types.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm-c/ExternC.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/BitmaskEnum.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/Alignment.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/CodeGen.h \
@@ -257,6 +258,8 @@ CMakeFiles/MyLoopInvariant.dir/home/ayang/Documenti/unimore/compilatori/parte2/c
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/IR/CallingConv.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/IR/DerivedTypes.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/IR/Type.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/CBindingWrapping.h \
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/Casting.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/TypeSize.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/IR/FMF.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/IR/Function.h \
@@ -444,9 +447,4 @@ CMakeFiles/MyLoopInvariant.dir/home/ayang/Documenti/unimore/compilatori/parte2/c
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Transforms/Utils/ValueMapper.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Passes/PassPlugin.h \
  /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/DynamicLibrary.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Analysis/ValueTracking.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Analysis/SimplifyQuery.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Analysis/WithCache.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Support/KnownBits.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/IR/Dominators.h \
- /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/ADT/DepthFirstIterator.h
+ /home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/include/llvm/Analysis/LoopIterator.h
