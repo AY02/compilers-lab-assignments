@@ -9,5 +9,6 @@ as part of the Compiler course.
 The project consists of the implementation of optimization passes on LLVM IR.
 
 ## Assignments
-- Assignment 1 – First steps in optimisation (local scope)
+- Assignment 1 - First steps in optimisation (local scope)
 - Assignment 2 - Data-Flow Analysis (DFA) and three proposed frameworks
+- Assignment 3 - Loop-Invariant Code Motion (LICM)

@@ -16,6 +16,9 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
 
   bool isOperandLoopInvariant(Value *V, Loop *L,
     SmallSetVector<Instruction*, 16> &InvariantSet) {
+    // In LLVM IR, global variables are pointers, and the load and store
+    // instructions are used to read or modify them. Consequently, they are
+    // loop-invariant by construction.
     if (isa<Constant>(V) || isa<Argument>(V) || isa<GlobalValue>(V))
       return true;
     if (Instruction *I = dyn_cast<Instruction>(V)) {
@@ -116,6 +119,32 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
     // the definitions) first, and then the successors (which contain the uses).
     LoopBlocksRPO LBRPO(L);
     LBRPO.perform(&LI); // Traverse the loop blocks and store the DFS result.
+
+    // We could also have used a Pre-Order DFS traversal on the Dominator Tree,
+    // as in SSA form we are guaranteed that every use is dominated by its
+    // (single) definition. However, the order of sibling nodes, i.e., the
+    // children of a parent node, is not guaranteed. This is a problem for
+    // branches because there is a risk that the phi node will be visited before
+    // the branches.
+    // Since we have not evaluated the input values of the phi instruction, it
+    // will always be labelled as a variant.
+    // Example (pseudo-code):
+    // %if.header A
+    // val = 10;
+    // if (cond) {
+    //   // %if.then B
+    // }
+    // else {
+    //   // %if.else C
+    // }
+    // %if.merge D
+    // x = phi([val, %B], [val, %C])
+    // Dominator Tree:
+    // A -> {B, C, D}
+    // Let us assume that we have the following traversal order:
+    // A -> D -> C -> B
+    // The input values are the same, but that value is not in the set of
+    // invariants. Consequently, the phi statement is also a variant.
 
     for (BasicBlock *BB : LBRPO) {
 
