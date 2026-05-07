@@ -106,7 +106,8 @@ Substitute `D = q * d` into both sides of the identity.
     `ceil((q * d) / d) = ceil(q) = q`
 *   **Right Side:**
     `floor((q * d + d - 1) / d) = floor(q + (d - 1) / d)`
-    Since `d > 0`, the fraction `(d - 1) / d` is strictly less than 1 and greater than or equal to 0. The floor of `q` plus a decimal `0 <= x < 1` is `q`.  
+    Since `d > 0`, the fraction `(d - 1) / d` is strictly less than 1 and greater than or equal to 0. The floor of `q` plus a decimal `0 <= x < 1` is `q`.
+
 `ceil((q * d) / d) = ceil(q) = q = floor(q) = floor(q + (d - 1) / d) = floor((q * d + d - 1) / d)`
 
 **Case 2: D is NOT a multiple of d (1 <= r <= d - 1)**
@@ -120,6 +121,7 @@ Substitute `D = q * d + r` into both sides.
     We know that `1 <= r <= d - 1)`. Subtracting 1 across the inequality yields `0 <= r - 1 <= d - 2`. Dividing by d:
     `0 <= (r - 1) / d <= (d - 2) / d < 1`
     Since `(r - 1) / d` is between 0 (inclusive) and 1 (exclusive), the floor of `(q + 1)` plus this decimal is exactly **`q + 1`**.
+
 `ceil((q * d + r) / d) = ceil(q + r / d) = q + 1 = floor(q + 1 + (r - 1) / d) = floor((q * d + r + d - 1) / d)`
 
 In both cases, the two expressions yield the same integer:
