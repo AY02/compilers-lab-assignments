@@ -75,7 +75,7 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
     // is executed, we are altering the program's behaviour (previously it would
     // print and terminate with an error; now it terminates with an error
     // without printing).
-    if (!isSafeToSpeculativelyExecute(&I)) {
+    if (!isSafeToSpeculativelyExecute(&I))
       continue;
     */
 
