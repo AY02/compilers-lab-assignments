@@ -112,8 +112,8 @@ Substitute `D = q * d` into both sides of the identity.
 
 **Case 2: D is NOT a multiple of d (1 <= r <= d - 1)**
 Substitute `D = q * d + r` into both sides.
-*   **Left Side:**
-    `ceil((q * d + r) / d) = ceil(q + r / d)`
+*   **Left Side:**  
+    `ceil((q * d + r) / d) = ceil(q + r / d)`  
     Since `1 <= r <= d - 1`, the fraction `r / d` is a strictly between 0 and 1. The ceiling of an integer plus a positive decimal triggers the next integer, yielding **`q + 1`**.
 
 *   **Right Side:**  
