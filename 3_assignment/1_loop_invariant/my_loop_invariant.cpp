@@ -120,31 +120,52 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
     LoopBlocksRPO LBRPO(L);
     LBRPO.perform(&LI); // Traverse the loop blocks and store the DFS result.
 
-    // We could also have used a Pre-Order DFS traversal on the Dominator Tree,
-    // as in SSA form we are guaranteed that every use is dominated by its
-    // (single) definition. However, the order of sibling nodes, i.e., the
-    // children of a parent node, is not guaranteed. This is a problem for
-    // branches because there is a risk that the phi node will be visited before
-    // the branches.
-    // Since we have not evaluated the input values of the phi instruction, it
-    // will always be labelled as a variant.
-    // Example (pseudo-code):
+    // We could also use a Pre-Order DFS traversal on the Dominator Tree, since in SSA 
+    // form we are guaranteed that every use is dominated by its unique definition. 
+    // However, unlike RPO DFS, the order of a parent node’s children is not guaranteed. 
+    // This causes problems when visiting branches, where there is a risk that the phi 
+    // node will be visited before the branch nodes.
+    // 
+    // Example:
     // %if.header A
-    // val = 10;
     // if (cond) {
     //   // %if.then B
+    //   x1 = a + b;
+    // } else {
+    //   // %if.else C
+    //   x2 = a + b;
     // }
-    // else {
+    // %if.merge D
+    // x = phi([x1, %B], [x2, %C]);
+    // 
+    // If we were to visit the nodes in the order A -> D -> C -> B, the phi instruction 
+    // would be marked as variant, regardless of its input values.
+    // 
+    // In reality, this problem does not arise in our current code, as the phi instruction 
+    // would immediately be marked as variant because x1 != x2.
+    // 
+    // If we were to apply a preliminary CSE optimization, the expression 'a + b' would 
+    // be moved to the header (x3 = a + b) and all uses of x1 and x2 would be replaced 
+    // with x3:
+    // 
+    // %if.header A
+    // x3 = a + b;
+    // if (cond) {
+    //   // %if.then B
+    // } else {
     //   // %if.else C
     // }
     // %if.merge D
-    // x = phi([val, %B], [val, %C])
-    // Dominator Tree:
-    // A -> {B, C, D}
-    // Let us assume that we have the following traversal order:
-    // A -> D -> C -> B
-    // The input values are the same, but that value is not in the set of
-    // invariants. Consequently, the phi statement is also a variant.
+    // x = phi([x3, %B], [x3, %C]);
+    // 
+    // As we can see, after CSE, the phi node no longer depends on the previous branches, 
+    // but only on the if.header. Consequently, we could safely visit the nodes via the 
+    // Dominator Tree because we are mathematically certain that A will be visited before D.
+    // 
+    // We have chosen to stick with RPO DFS as we might eventually decide to evaluate 
+    // the RHS of x1 and x2 for equivalence without relying on a preliminary CSE pass. 
+    // This future expansion would require a strict topological sort even among sibling 
+    // nodes (A -> (B/C -> C/B) -> D).
 
     for (BasicBlock *BB : LBRPO) {
 
