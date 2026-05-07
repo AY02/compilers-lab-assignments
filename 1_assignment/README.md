@@ -25,7 +25,7 @@ Binary algebraic operations applied with a neutral or absorbing constant can be 
     * **Absorbing Element:** `a * 0` and `0 * a` $\rightarrow$ replaces all uses with `0`.
 * **DIV:**
     * **Neutral Element:** `a / 1` $\rightarrow$ replaces all uses with `a`.
-    * **Absorbing Element:** `0 / a` (where `a ≠ 0`) $\rightarrow$ replaces all uses with `0`.
+    * **Absorbing Element:** `0 / a` (where `a != 0`) $\rightarrow$ replaces all uses with `0`.
     * *Exclusions:* Does not handle `1 / a`, `a / 0`, or `0 / 0` (division by zero is left as undefined behavior).
 
 ---
@@ -77,3 +77,53 @@ Some sequences of two consecutive instructions apply an operation and immediatel
 * **Exact Division**: Optimization of the `(a / n) * n` pattern occurs **only if** the original division is marked as exact (`isExact()`). Otherwise, the multiplication would not correctly reverse the integer division truncation (e.g., `(7 / 2) * 2 = 6`), thus preserving original semantics.
 * **Pointer Comparison**: The pass verifies that the `ConstantInt` objects in both instructions are the exact same instance in memory (pointer equality).
 * **No Inverse Bitwise:** Currently limited to basic arithmetic operators (`ADD`, `SUB`, `MUL`, `DIV`).
+
+---
+
+## Appendix: Proof for Signed Division
+
+The Strength Reduction pass uses a specific formula to replace Signed Division (`SDIV`) by a power of two with an Arithmetic Shift Right (`AShr`). This is necessary because C integer division for negative numbers truncates toward zero, whereas the IR `AShr` instruction truncates toward minus infinity (-inf).
+
+Dividing a negative integer `D < 0` by a positive integer divisor `d = 2 ^ k` translates to:
+*   **C Division (Truncate to 0):** `ceil(D / d)`
+*   **AShr (Truncate to -∞):** `floor(D / d)`
+
+To align the `AShr` behavior with C semantics, the pass computes `(D + d - 1) >> k`. We must prove the following identity:
+
+`ceil(D / d) = floor((D + d - 1) / d)`
+
+### Proof
+
+By the Euclidean division theorem, any integer `D` can be expressed as:
+`D = q * d + r`
+where `q` is the quotient and `r` is the remainder, with `0 <= r <= d - 1`.
+
+There are two scenarios:
+
+**Case 1: D is a multiple of d (r = 0)**
+Substitute `D = q * d` into both sides of the identity.
+*   **Left Side:**
+    `ceil((q * d) / d) = ceil(q) = q`
+*   **Right Side:**
+    `floor((q * d + d - 1) / d) = floor(q + (d - 1) / d)`
+    Since `d > 0`, the fraction `(d - 1) / d` is strictly less than 1 and greater than or equal to 0. The floor of `q` plus a decimal `0 <= x < 1` is `q`.
+`ceil((q * d) / d) = ceil(q) = q = floor(q) = floor(q + (d - 1) / d) = floor((q * d + d - 1) / d)`
+
+**Case 2: D is NOT a multiple of d (1 <= r <= d - 1)**
+Substitute `D = q * d + r` into both sides.
+*   **Left Side:**
+    `ceil((q * d + r) / d) = ceil(q + r / d)`
+    Since `1 <= r <= d - 1`, the fraction `r / d` is a strictly between 0 and 1. The ceiling of an integer plus a positive decimal triggers the next integer, yielding **`q + 1`**.
+
+*   **Right Side:**
+    `floor((q * d + r + d - 1) / d) = floor(q + (r + d - 1) / d) = floor(q + 1 + (r - 1) / d)`
+    We know that `1 <= r <= d - 1)`. Subtracting 1 across the inequality yields `0 <= r - 1 <= d - 2`. Dividing by d:
+    `0 <= (r - 1) / d <= (d - 2) / d < 1`
+    Since `(r - 1) / d` is between 0 (inclusive) and 1 (exclusive), the floor of `(q + 1)` plus this decimal is exactly **`q + 1`**.
+`ceil((q * d + r) / d) = ceil(q + r / d) = q + 1 = floor(q + 1 + (r - 1) / d) = floor((q * d + r + d - 1) / d)`
+
+In both cases, the two expressions yield the same integer:
+1.  If `r = 0`, the result is `q`.
+2.  If `r > 0`, the result is `q + 1`.
+
+By adding the `2^k - 1` bias, the compiler forces the floor-based Arithmetic Shift Right `AShr` to simulate a ceiling-based division `SDIV`, preserving C semantics.
