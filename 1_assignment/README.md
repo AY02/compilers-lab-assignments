@@ -86,7 +86,7 @@ The Strength Reduction pass uses a specific formula to replace Signed Division (
 
 Dividing a negative integer `D < 0` by a positive integer divisor `d = 2 ^ k` translates to:
 *   **C Division (Truncate to 0):** `ceil(D / d)`
-*   **AShr (Truncate to -∞):** `floor(D / d)`
+*   **AShr (Truncate to -inf):** `floor(D / d)`
 
 To align the `AShr` behavior with C semantics, the pass computes `(D + d - 1) >> k`. We must prove the following identity:
 
