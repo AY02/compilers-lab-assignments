@@ -102,10 +102,10 @@ There are two scenarios:
 
 **Case 1: D is a multiple of d (r = 0)**
 Substitute `D = q * d` into both sides of the identity.
-*   **Left Side:**
-    `ceil((q * d) / d) = ceil(q) = q`
-*   **Right Side:**
-    `floor((q * d + d - 1) / d) = floor(q + (d - 1) / d)`
+*   **Left Side:**  
+    `ceil((q * d) / d) = ceil(q) = q`  
+*   **Right Side:**  
+    `floor((q * d + d - 1) / d) = floor(q + (d - 1) / d)`  
     Since `d > 0`, the fraction `(d - 1) / d` is strictly less than 1 and greater than or equal to 0. The floor of `q` plus a decimal `0 <= x < 1` is `q`.
 
 `ceil((q * d) / d) = ceil(q) = q = floor(q) = floor(q + (d - 1) / d) = floor((q * d + d - 1) / d)`
