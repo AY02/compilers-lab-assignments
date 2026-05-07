@@ -11,6 +11,16 @@ namespace {
 
 
 struct MyMultiInstruction: PassInfoMixin<MyMultiInstruction> {
+
+  void myReplaceAllUsesWith(Value *OldV, Value *NewV) {
+    if (OldV == NewV)
+      return;
+    while (!OldV->use_empty()) {
+      Use &U = *OldV->use_begin();
+      U.set(NewV);
+    }
+  }
+
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
 
     // prev_instr -> x = y add k (k add y)
@@ -115,8 +125,15 @@ struct MyMultiInstruction: PassInfoMixin<MyMultiInstruction> {
           continue;
         }
 
+        // Example:
+        // prev_instr: tmp = x + 5
+        // curr_instr: res = tmp - 5
+        // Then:
+        // prev_const_op = curr_const_op = 5
+        // prev_op = x
+        // Replace all uses of curr_instr with x
         if (prev_const_op == curr_const_op) {
-            curr_instr.replaceAllUsesWith(prev_op);
+            myReplaceAllUsesWith(&curr_instr, prev_op);
         }
 
       }
