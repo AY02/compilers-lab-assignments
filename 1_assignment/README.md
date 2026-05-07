@@ -116,8 +116,8 @@ Substitute `D = q * d + r` into both sides.
     `ceil((q * d + r) / d) = ceil(q + r / d)`
     Since `1 <= r <= d - 1`, the fraction `r / d` is a strictly between 0 and 1. The ceiling of an integer plus a positive decimal triggers the next integer, yielding **`q + 1`**.
 
-*   **Right Side:**
-    `floor((q * d + r + d - 1) / d) = floor(q + (r + d - 1) / d) = floor(q + 1 + (r - 1) / d)`
+*   **Right Side:**  
+    `floor((q * d + r + d - 1) / d) = floor(q + (r + d - 1) / d) = floor(q + 1 + (r - 1) / d)`  
     We know that `1 <= r <= d - 1)`. Subtracting 1 across the inequality yields `0 <= r - 1 <= d - 2`. Dividing by d:
     `0 <= (r - 1) / d <= (d - 2) / d < 1`
     Since `(r - 1) / d` is between 0 (inclusive) and 1 (exclusive), the floor of `(q + 1)` plus this decimal is exactly **`q + 1`**.
