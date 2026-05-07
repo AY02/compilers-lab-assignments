@@ -39,15 +39,15 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
   bool isInstructionLoopInvariant(Instruction &I, Loop *L,
     SmallSetVector<Instruction*, 16> &InvariantSet) {
 
-    // Each basic block ends with a Terminator instruction, which specifies
-    // the next basic block to be executed.
+    // Each basic block ends with a Terminator instruction, which specifies the
+    // next basic block to be executed.
     // Examples of terminators: Return (ret), Branch (br), Switch (switch).
     // By definition, Terminator instructions are not loop-invariant.
     if (I.isTerminator())
       return false;
 
-    // A phi instruction is loop-invariant only if the values associated with
-    // the incoming blocks are the same and that value is itself loop-invariant.
+    // A phi instruction is loop-invariant only if the values associated with the
+    // incoming blocks are the same and that value is itself loop-invariant.
     if (auto *PN = dyn_cast<PHINode>(&I)) {
       // FV (First Value)
       Value *FV = PN->getIncomingValue(0);
@@ -60,8 +60,8 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
     }
 
     /*
-    These filters are not part of the definition of ‘loop-invariant’, but they
-    are part of the definition of ‘hoistable instruction’
+    These filters are not part of the definition of loop-invariant, but they are
+    part of the definition of hoistable instruction.
     
     // Examples of instructions with side effects: store operations and function
     // calls that alter the state of the program (e.g., printf).
@@ -99,9 +99,9 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
     // - Vector: It is an ordered collection, i.e., the iteration sequence is
     // deterministic.
     // - Set: The elements are unique, i.e., a search takes O(1) time.
-    // As long as the SetVector contains fewer than 16 elements, it is stored
-    // on the stack (which is faster). Once it exceeds 16 elements, it is moved
-    // to the heap (with a slight overhead).
+    // As long as the SetVector contains fewer than 16 elements, it is stored on
+    // the stack (which is faster). Once it exceeds 16 elements, it is moved to
+    // the heap (with a slight overhead).
     SmallSetVector<Instruction*, 16> InvariantSet;
 
     // The order in which the blocks of a loop are visited via L->blocks() is not
@@ -112,20 +112,18 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
     // s1: x = a + b <-- Loop-invariant
     // s2: y = x + 2
     // If we were to visit the block containing s2 first, then y would not be
-    // considered loop-invariant as it uses x, which has not yet been labelled
-    // as such.
-    // We need to sort the nodes in the loop using Reverse Post-Order DFS
+    // considered loop-invariant as it uses x, which has not yet been labelled as
+    // such. We need to sort the nodes in the loop using Reverse Post-Order DFS
     // Traversal (RPO DFS Traversal): we visit the predecessors (which contain
     // the definitions) first, and then the successors (which contain the uses).
     LoopBlocksRPO LBRPO(L);
     LBRPO.perform(&LI); // Traverse the loop blocks and store the DFS result.
 
-    // We could also use a Pre-Order DFS traversal on the Dominator Tree, since in SSA 
-    // form we are guaranteed that every use is dominated by its unique definition. 
-    // However, unlike RPO DFS, the order of a parent node’s children is not guaranteed. 
-    // This causes problems when visiting branches, where there is a risk that the phi 
-    // node will be visited before the branch nodes.
-    // 
+    // We could also use a Pre-Order DFS traversal on the Dominator Tree, since
+    // in SSA form we are guaranteed that every use is dominated by its unique
+    // definition. However, unlike RPO DFS, the order of a parent node’s children
+    // is not guaranteed. This causes problems when visiting branches, where
+    // there is a risk that the phi node will be visited before the branch nodes.
     // Example:
     // %if.header A
     // if (cond) {
@@ -137,35 +135,32 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
     // }
     // %if.merge D
     // x = phi([x1, %B], [x2, %C]);
-    // 
-    // If we were to visit the nodes in the order A -> D -> C -> B, the phi instruction 
-    // would be marked as variant, regardless of its input values.
-    // 
-    // In reality, this problem does not arise in our current code, as the phi instruction 
-    // would immediately be marked as variant because x1 != x2.
-    // 
-    // If we were to apply a preliminary CSE optimization, the expression 'a + b' would 
-    // be moved to the header (x3 = a + b) and all uses of x1 and x2 would be replaced 
-    // with x3:
-    // 
+    // If we were to visit the nodes in the order A -> D -> C -> B, the phi
+    // instruction would be marked as variant, regardless of its input values.
+    // In reality, this problem does not arise in our current code, as the phi
+    // instruction would immediately be marked as variant because x1 != x2.
+    // If we were to apply a preliminary CSE optimization, the expression a + b
+    // would be moved to the header (x3 = a + b) and all uses of x1 and x2 would
+    // be replaced with x3:
     // %if.header A
     // x3 = a + b;
     // if (cond) {
     //   // %if.then B
+    //   x1 = a + b; (dead code)
     // } else {
     //   // %if.else C
+    //   x2 = a + b; (dead code)
     // }
     // %if.merge D
     // x = phi([x3, %B], [x3, %C]);
-    // 
-    // As we can see, after CSE, the phi node no longer depends on the previous branches, 
-    // but only on the if.header. Consequently, we could safely visit the nodes via the 
-    // Dominator Tree because we are mathematically certain that A will be visited before D.
-    // 
-    // We have chosen to stick with RPO DFS as we might eventually decide to evaluate 
-    // the RHS of x1 and x2 for equivalence without relying on a preliminary CSE pass. 
-    // This future expansion would require a strict topological sort even among sibling 
-    // nodes (A -> (B/C -> C/B) -> D).
+    // As we can see, after CSE, the phi node no longer depends on the previous
+    // branches, but only on the if.header. Consequently, we could safely visit
+    // the nodes via the Dominator Tree because we are mathematically certain
+    // that A will be visited before D. We have chosen to stick with RPO DFS as
+    // we might eventually decide to evaluate the RHS of x1 and x2 for
+    // equivalence without relying on a preliminary CSE pass. This future
+    // expansion would require a strict topological sort even among sibling nodes
+    // (A -> (B/C -> C/B) -> D).
 
     for (BasicBlock *BB : LBRPO) {
 
