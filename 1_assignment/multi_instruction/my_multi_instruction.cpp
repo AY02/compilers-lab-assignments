@@ -17,6 +17,8 @@ struct MyMultiInstruction: PassInfoMixin<MyMultiInstruction> {
       return;
     while (!OldV->use_empty()) {
       Use &U = *OldV->use_begin();
+      // It removes U from the OldV use list.
+      // It adds U in NewV's use list.
       U.set(NewV);
     }
   }
