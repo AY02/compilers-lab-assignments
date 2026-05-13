@@ -1,0 +1,9 @@
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/3_assignment/2_licm/build/CMakeFiles/intrinsics_gen.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/3_assignment/2_licm/build/CMakeFiles/omp_gen.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/3_assignment/2_licm/build/CMakeFiles/acc_gen.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/3_assignment/2_licm/build/CMakeFiles/ARMTargetParserTableGen.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/3_assignment/2_licm/build/CMakeFiles/AArch64TargetParserTableGen.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/3_assignment/2_licm/build/CMakeFiles/RISCVTargetParserTableGen.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/3_assignment/2_licm/build/CMakeFiles/MyLICM.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/3_assignment/2_licm/build/CMakeFiles/edit_cache.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/3_assignment/2_licm/build/CMakeFiles/rebuild_cache.dir
