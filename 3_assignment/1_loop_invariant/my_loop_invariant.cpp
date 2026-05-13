@@ -26,7 +26,7 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
       // I->getParent() is the basic block containing I.
       if (!L->contains(I->getParent()))
         return true;
-      // Uses of definitions inside the loop that has already been marked as
+      // Uses of definitions inside the loop that have already been marked as
       // loop-invariant are also loop-invariant.
       if (InvariantSet.count(I))
         return true;
