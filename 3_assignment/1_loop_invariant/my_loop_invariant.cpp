@@ -69,6 +69,7 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
     // function calls that read from memory (e.g., strlen or printf).
     if (I.mayHaveSideEffects() || I.mayReadFromMemory())
       return false;
+    */
 
     // An instruction is loop-invariant if its operands are also loop-invariant.
     for (Value *V : I.operand_values()) {
