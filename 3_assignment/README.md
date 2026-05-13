@@ -80,7 +80,7 @@ In a Dominator Tree, `A` dominates `B`, `C`, and `D`. A Pre-Order traversal coul
 
 As an alternative to RPO, we can implement an algorithm that explicitly utilizes **DEF-USE chains**, disregarding the specific block visit order. Whenever an instruction's operand is a definition, the algorithm recursively executes the loop-invariant check on that operand.
 
-In this approach, the `InvariantSet` and `VariantSet` evolve into a **memoization mechanism**, preventing redundant recursive traversals:
+In this approach, the `InvariantSet` and `VariantSet` evolve into a **caching mechanism**, preventing redundant recursive traversals:
 - **`InvariantSet`**: Stores instructions already proven to be loop-invariant.
 - **`VariantSet`**: Stores instructions already identified as loop-variant.
 
