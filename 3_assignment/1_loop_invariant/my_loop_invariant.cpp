@@ -70,15 +70,6 @@ struct MyLoopInvariant: PassInfoMixin<MyLoopInvariant> {
     if (I.mayHaveSideEffects() || I.mayReadFromMemory())
       return false;
 
-    // Examples of unsafe instructions: If we move a division by zero to the
-    // pre-header and print some messages in the loop before the division by zero
-    // is executed, we are altering the program's behaviour (previously it would
-    // print and terminate with an error; now it terminates with an error
-    // without printing).
-    if (!isSafeToSpeculativelyExecute(&I))
-      continue;
-    */
-
     // An instruction is loop-invariant if its operands are also loop-invariant.
     for (Value *V : I.operand_values()) {
       if (!isOperandLoopInvariant(V, L, InvariantSet))
