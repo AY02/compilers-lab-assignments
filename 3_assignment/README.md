@@ -93,15 +93,15 @@ By caching both results, the algorithm ensures that each instruction is analyzed
 > ```text
 > entry:         ; pre-header
 >   br label %header
-> header:        ; header
+> header:
 >   ; The phi node depends on %i.next (from the latch)
->   %i = phi i32 [ 0, %entry ], [ %i.next, %loop.latch ]
+>   %i = phi i32 [ 0, %entry ], [ %i.next, %latch ]
 >   ; The add instruction depends on %i
 >   %i.next = add i32 %i, 1
 >   %cond = icmp slt i32 %i.next, 10
->   br i1 %cond, label %loop.latch, label %exit
+>   br i1 %cond, label %latch, label %exit
 > latch:         ; back-edge to the header
->   br label %loop.header
+>   br label %header
 > exit:
 >   ret void
 > ```
