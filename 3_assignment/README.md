@@ -91,7 +91,7 @@ By caching both results, the algorithm ensures that each instruction is analyzed
 > In LLVM IR, a phi node in the loop header merges a value coming from the preheader (entry) with a value coming from the latch (back-edge). Since the value from the latch usually depends on instructions within the loop body that, in turn, depend on the phi itself, following the operands would result in an endless circular traversal.
 **Example:**
 > ```text
-> entry:         ; pre-header
+> entry:         ; preheader
 >   br label %header
 > header:
 >   ; The phi node depends on %i.next (from the latch)
