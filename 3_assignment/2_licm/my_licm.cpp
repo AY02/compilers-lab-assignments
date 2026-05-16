@@ -5,6 +5,7 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/ADT/SetVector.h"
 #include "llvm/Analysis/LoopIterator.h"
+#include "llvm/Analysis/ValueTracking.h"
 
 #include "llvm/IR/Dominators.h"
 
@@ -60,26 +61,14 @@ struct MyLICM: PassInfoMixin<MyLICM> {
       }
       return isOperandLoopInvariant(FV, L, InvariantSet);
     }
-
-    /*
-    These filters are not part of the definition of loop-invariant, but they are
-    part of the definition of hoistable instruction.
     
-    // Examples of instructions with side effects: store operations and function
-    // calls that alter the state of the program (e.g., printf).
+    // Examples of instructions with side effects, relevant for code 
+    // hoisting: store operations and function calls that
+    // alter the state of the program (e.g., printf).
     // Examples of instructions that read from memory: load instructions and
     // function calls that read from memory (e.g., strlen or printf).
     if (I.mayHaveSideEffects() || I.mayReadFromMemory())
       return false;
-
-    // Examples of unsafe instructions: If we move a division by zero to the
-    // pre-header and print some messages in the loop before the division by zero
-    // is executed, we are altering the program's behaviour (previously it would
-    // print and terminate with an error; now it terminates with an error
-    // without printing).
-    if (!isSafeToSpeculativelyExecute(&I))
-      continue;
-    */
 
     // An instruction is loop-invariant if its operands are also loop-invariant.
     for (Value *V : I.operand_values()) {
@@ -94,18 +83,55 @@ struct MyLICM: PassInfoMixin<MyLICM> {
   bool dominatesAllExits(Instruction *I, Loop *L, DominatorTree &DT) {
     // Getting the parent block of the invariant instruction
     BasicBlock *BB = I->getParent();
-    // Getting the exiting blocks of the loop
-    SmallVector<BasicBlock *, 8> ExitingBlocks;
-    L->getExitingBlocks(ExitingBlocks); // to check if I can make it in a different way
+    // Getting the exit blocks of the loop
+    SmallVector<BasicBlock *, 8> ExitBlocks;
+    L->getExitBlocks(ExitBlocks);
 
     // Check whether the BB of the invariant instruction dominates
-    // all the exiting block. If not, return false
-    for (BasicBlock *ExitingBB : ExitingBlocks) {
-        if (!DT.dominates(BB, ExitingBB)) {
+    // all the exit blocks. If not, return false
+    for (BasicBlock *ExitBB : ExitBlocks) {
+        if (!DT.dominates(BB, ExitBB)) {
             return false;
         }
     }
     return true;
+  }
+
+  // This function works for compilers that does not use an SSA form
+  // but it is not used in this program since LLVM IR provides that form.
+  // Therefore, each use has only one definition, and is guaranteed that, 
+  // even if in the original code the instruction moved outside the loop 
+  // would have overwritten an hypotethical old def outside the loop,
+  // in the SSA form there is not the overwritting definition concept.
+  // Example:
+  // a = 3;
+  // for (...) {
+  //   a = 5;
+  // }
+  // c = a + 1;
+  //
+  // BUT: in SSA it would be like this:
+  // old_a = 3;
+  // for (...) {
+  //   new_a = 5;
+  // }
+  // c = old_a + 1;
+  // Even if the instruction a = 5 is moved outside the loop, in the SSA
+  // form the use of a in c = a + 1 would be linked to its single 
+  // definition (old_a in this example), therefore moving a = 5 (i.e. new_a = 5) 
+  // outside the loop would just be considered dead code.
+  bool isDeadOutsideLoop(Instruction *I, Loop *L) {
+    // for all uses of the instruction I
+    for (User *U : I->users()) {
+      if (Instruction *UseInst = dyn_cast<Instruction>(U)) {
+        // If the parent's block of the instruction is not
+        // in the loop, the variable is alive outside the loop
+        if (!L->contains(UseInst->getParent())) {
+          return false; // uses outside the loop
+        }
+      }
+    }
+    return true; // no uses outside the loop, variable is hoistable
   }
 
   void printLoopInvariantsInLoop(Loop *L, LoopInfo &LI, DominatorTree &DT) {
@@ -183,16 +209,9 @@ struct MyLICM: PassInfoMixin<MyLICM> {
 
     for (BasicBlock *BB : LBRPO) {
 
-      // LI.getLoopFor(BB) returns the innermost loop to which BB belongs.
-      // If we are in an outer loop, then we skip the blocks belonging to the
-      // inner loops.
-      // These two lines should be commented out if only Loop-Invariant Analysis
-      // is being performed (without Code Motion).
-      // Otherwise, instructions considered loop-invariant within an inner loop
-      // will never be considered loop-invariant with respect to the outer loop
-      // (see the test cases).
-      // In other words, we analyse the instructions only in relation to the
-      // innermost loop to which they belong.
+      // LI.getLoopFor(BB) returns the innermost loop to which 
+      // BB belongs. If we are in an outer loop, then we skip 
+      // the blocks belonging to the inner loops.
       if (LI.getLoopFor(BB) != L)
         continue;
 
@@ -211,18 +230,45 @@ struct MyLICM: PassInfoMixin<MyLICM> {
     
     if (!Preheader) {
       errs() << "\tNo preheader found for this loop.\n";
-      return; // We can implement a preheader creation logic
+      return; // We could implement a preheader creation logic
     }
 
     // Getting the terminator of the preheader to 
     // add the hoistable instruction just before it
+    // since the terminator of the preheader is the
+    // br to the loop header, and we want that hoisted
+    // instructions preceed the loop header
     Instruction *PreheaderTerminator = Preheader->getTerminator();
 
     // The order of instruction inside the invariantSet is the 
     // order of insertion while making the RPO traversal, this
     // guarantees that uses won't be moved before definitions
+    // (definitions are evaluated for hoisting, and therefore
+    // hoisted if hoistable, before their uses)
     for (Instruction *I : InvariantSet) {
-      if (dominatesAllExits(I, L, DT)){
+      
+      // To be hoistable an instruction needs to dominate all of its exits,
+      // OR to not have side effects (since the worst case would be dead code).
+      // The OR is relevant, because the domination of the Exits is not 
+      // enough to guarantee that hoistable instructions are indeed hoisted:
+      // Example:
+      // a = 1;
+      // x = ...;
+      // for (i = x; i < 100; i++)
+      //   a = b + c;
+      // In this case, the instruction a = b + c; does not dominate all of
+      // its exits, since it is not guaranteed that the loop is executed (if x is >= 100
+      // you never enter the loop), and so it is not guaranteed that after the loop
+      // the instruction is always executed. In SSA a = 1 and a = b + c are 
+      // two distinct definitions, so it is possible to move a = b + c without altering 
+      // the semantic of the program (hypothetical "a" variable uses after the loop would
+      // be linked to its definition). But with the sole "dominatesAllExits" condition
+      // the instruction would not be moved. For this reason the OR condition is added,
+      // so that also this kind of instructions can be moved, but only if these instructions
+      // are safe to execute (don't cause early exits that would not be faced otherwise).
+      // Note: the fact that the instructions dont't have side effects that would alter 
+      // the semantic of the program is already guaranteed by the InvariantSet construction's conditions  
+      if (dominatesAllExits(I, L, DT) || isSafeToSpeculativelyExecute(I)) {
         errs() << "\tHoisting instruction: " << *I << "\n";
         I->moveBefore(PreheaderTerminator);
       }

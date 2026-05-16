@@ -426,4 +426,10 @@ CMakeFiles/MyLICM.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/c
  /usr/include/llvm-19/llvm/Transforms/Utils/ValueMapper.h \
  /usr/include/llvm-19/llvm/Passes/PassPlugin.h \
  /usr/include/llvm-19/llvm/Support/DynamicLibrary.h \
- /usr/include/llvm-19/llvm/Analysis/LoopIterator.h
+ /usr/include/llvm-19/llvm/Analysis/LoopIterator.h \
+ /usr/include/llvm-19/llvm/Analysis/ValueTracking.h \
+ /usr/include/llvm-19/llvm/Analysis/SimplifyQuery.h \
+ /usr/include/llvm-19/llvm/Analysis/WithCache.h \
+ /usr/include/llvm-19/llvm/Support/KnownBits.h \
+ /usr/include/llvm-19/llvm/IR/Dominators.h \
+ /usr/include/llvm-19/llvm/ADT/DepthFirstIterator.h
