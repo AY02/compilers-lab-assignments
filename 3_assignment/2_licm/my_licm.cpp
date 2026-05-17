@@ -67,6 +67,10 @@ struct MyLICM: PassInfoMixin<MyLICM> {
     // alter the state of the program (e.g., printf).
     // Examples of instructions that read from memory: load instructions and
     // function calls that read from memory (e.g., strlen or printf).
+    // Note: this can possibly exclude from the InvariantSet some invariant
+    // instructions, but is made here for code simplicity, changing the "meaning"
+    // of the InvariantSet (it's not the set of invariant instruction anymore,
+    // event though it only contains invariant instructions)
     if (I.mayHaveSideEffects() || I.mayReadFromMemory())
       return false;
 
