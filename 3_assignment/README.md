@@ -116,4 +116,188 @@ By caching both results, the algorithm ensures that each instruction is analyzed
 
 ## 2. Code Motion
 
-*(Documentation for the Code Motion implementation provided by Christian)*
+Once the loop-invariant instructions have been identified and deterministically
+ordered, the second phase of LICM is the actual **Code Motion** (hoisting).
+This phase evaluates whether it is legally and semantically correct to move
+these instructions out of the loop and into its **preheader**.
+
+To maintain the correct execution flow, hoisted instructions are inserted right
+before the preheader's terminator instruction (the branch that jumps to the
+loop header).
+
+### 2.1 Theoretical Conditions vs. SSA
+
+According to classic compiler theory, an instruction is a candidate for code
+motion if it satisfies all of the following conditions:
+
+1. It is loop-invariant.
+2. It assigns a value to a variable not assigned elsewhere in the loop.
+3. It is located in a block that dominates all blocks in the loop that use
+   the variable.
+4. It is located in a block that **dominates all exits of the loop**, OR the
+   variable defined by the instruction is **dead (unused) outside the loop**.
+
+Because LLVM IR strictly enforces **Static Single Assignment (SSA)** form,
+the second and third conditions are intrinsically guaranteed. In SSA, a virtual
+register is assigned exactly once, eliminating any risk of overwriting
+variables. Furthermore, SSA guarantees that a definition strictly dominates
+all of its uses.
+
+Consequently, in the context of LLVM, the prerequisites for code motion are
+vastly simplified. Assuming the instruction is invariant and has no side
+effects, the rule reduces to the fourth condition:
+
+> **The instruction must dominate all loop exits, OR the variable must be
+> dead outside the loop.**
+
+### 2.2 Implementation
+
+The dominance condition ensures that if the program enters the loop, the
+instruction will inevitably be executed before any exit is taken.
+
+However, in standard `for` loops the exit condition is evaluated *before*
+the loop body, so the loop may execute zero times. Because the loop can exit
+straight from the header without ever reaching the body, instructions inside
+the body **do not dominate the loop exits**.
+
+To handle this case, the "dead outside the loop" branch of the fourth condition
+would theoretically allow hoisting. In practice, however, bypassing the
+dominance check on this basis alone can lead to the **speculative execution**
+of unsafe instructions — such as integer division — in zero-trip loops,
+altering the program's semantics by causing an illegitimate trap.
+
+To resolve this, we replace the dead-variable check with an evaluation of the
+instruction's intrinsic safety via `isSafeToSpeculativelyExecute`. The final
+hoisting condition becomes:
+
+```cpp
+if (dominatesAllExits(I, L, DT) || isSafeToSpeculativelyExecute(I))
+```
+
+If the instruction is intrinsically safe (e.g., a simple addition), it is
+hoisted speculatively: if the loop does not run, the CPU merely computes an
+unused value without causing any harm. If the instruction is unsafe
+(e.g., integer division), it is only hoisted when it dominates all exits,
+preserving the original program semantics exactly.
+
+It is also worth noting that LLVM often places internal `phi` nodes inside
+the loop header to collect values used outside the loop. Because the direct
+user of the instruction is this internal `phi` node, a naive dead-outside-loop
+check would almost always return `true`, making it an unreliable gate for
+code motion in LLVM IR. The `isSafeToSpeculativelyExecute` condition sidesteps
+this issue entirely.
+
+### 2.3 Test Cases and Final Remarks
+
+The following test cases demonstrate the correctness of the implementation.
+
+#### `test_basic_hoisting`
+
+```c
+int test_basic_hoisting(int a, int b, int n) {
+  int sum = 0;
+  for (int i = 0; i < n; i++) {
+    int x = a * b;    // Invariant, safe to speculate → hoisted
+    int y = a / b;    // Invariant, UNSAFE (can trap) → not hoisted
+    sum += x + i;
+  }
+  return sum;
+}
+```
+
+`x = a * b` is hoisted because multiplication is safe to execute
+speculatively, even though the body does not dominate the exits.
+`y = a / b` is correctly blocked: hoisting it would risk a division-by-zero
+trap when `n == 0`.
+
+#### `test_dominance_needed`
+
+```c
+int test_dominance_needed(int a, int b, int n) {
+  int sum = 0;
+  int i = 0;
+  do {
+    int x = a / b;  // Invariant, UNSAFE, but dominates all exits → hoisted
+    sum += x + i;
+    i++;
+  } while (i < n);
+  return sum;
+}
+```
+
+The `do-while` structure guarantees that the body always executes before any
+exit is taken, so the body block dominates the exiting block. The dominance
+condition alone is sufficient, and the unsafe division is correctly hoisted.
+
+#### `test_nested_hoisting`
+
+```c
+int test_nested_hoisting(int a, int b, int n) {
+  int sum = 0;
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      int x = a + b;  // Invariant w.r.t. inner loop → hoisted to inner
+                      // preheader, then invariant w.r.t. outer → hoisted again
+      sum += x + j;
+    }
+  }
+  return sum;
+}
+```
+
+Thanks to the bottom-up post-order traversal, `x = a + b` is first hoisted
+to the inner loop's preheader (which lies inside the outer loop), and then
+recognized as invariant with respect to the outer loop and hoisted again to
+the outer preheader.
+
+#### `test_memory_no_hoist`
+
+```c
+void test_memory_no_hoist(int *ptr, int n) {
+  for (int i = 0; i < n; i++) {
+    int val = *ptr;   // Excluded by mayReadFromMemory → not hoisted
+    *ptr = 42;        // Excluded by mayHaveSideEffects → not hoisted
+  }
+}
+```
+
+Memory operations are excluded from the `InvariantSet` during the analysis
+phase. Hoisting a load could read a value before it is initialised; hoisting
+a store would change the number of times the side effect is observed.
+
+#### `test_invariants_chain`
+
+```c
+int test_invariants_chain(int a, int b, int n) {
+  int sum = 0;
+  for (int i = 0; i < n; i++) {
+    int x = a + b;    // Invariant → hoisted first
+    int y = x * 42;   // Invariant, depends on x → hoisted second
+    sum += y + i;
+  }
+  return sum;
+}
+```
+
+Both `x` and `y` are loop-invariant, but `y` depends on `x`. The RPO
+traversal guarantees that `x` is inserted into the `InvariantSet` before `y`,
+so definitions are always hoisted before their uses.
+
+#### `test_2versions`
+
+```c
+int test_2versions(int a, int b, int n) {
+  int x = 10;
+  for (int i = 0; i < n; i++) {
+    x = a + b;
+  }
+  return x + 1;
+}
+```
+
+`x` is used outside the loop. A dead-outside-loop check would nonetheless
+return `true` here because LLVM places the `phi` node that collects `x`
+inside the loop header, making the instruction appear to have no users
+outside the loop. In our implementation this edge case does not arise:
+`x = a + b` is hoisted simply because `isSafeToSpeculativelyExecute`
+returns `true`.
