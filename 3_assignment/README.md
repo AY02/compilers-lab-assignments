@@ -125,19 +125,37 @@ To maintain the correct execution flow, moved instructions (or hoisted instructi
 
 According to classic compiler theory, an instruction is a candidate for code motion if it satisfies all of the following conditions:
 
-1. It is loop-invariant.
-2. It assigns a value to a variable not assigned elsewhere in the loop.
-3. It is located in a block that dominates all blocks in the loop that use the variable.
-4. It is located in a block that **dominates all exits of the loop**, OR the variable defined by the instruction is **dead (unused) outside the loop**.
+1. It is loop-invariant
+2. It assigns a value to a variable not assigned elsewhere in the loop
+3. It is located in a block that dominates all blocks in the loop that use the variable
+4. It is located in a block that **dominates all exits of the loop**
 
 Because LLVM IR strictly enforces **Static Single Assignment (SSA)** form, the second and third conditions are intrinsically guaranteed. In SSA, a virtual register is assigned exactly once, eliminating any risk of overwriting variables. Furthermore, SSA guarantees that a definition strictly dominates all of its uses.
 
 Consequently, in the context of LLVM, the prerequisites for code motion are vastly simplified. Assuming the instruction is invariant and has no side effects, the rule reduces to the fourth condition:
 
-> **The instruction must dominate all loop exits, OR the variable must be dead outside the loop.**
+> **The instruction must dominate all loop exits**
+
+Or to relaxed formulations. In fact, the fourth condition in practice is quite strict: the instruction must dominate all loop exits. This alone can be overly conservative: in a standard `for` loop the body never dominates the exits, since the loop may not execute at all. It is therefore possible to relax this condition: if the variable defined by the instruction is **dead outside the loop** (i.e. it has no uses after the loop exits), hoisting it cannot affect the observable behavior of the program, and the instruction becomes a candidate for code motion regardless of dominance.
+A further relaxation, and the one adopted in the main implementation, replaces the dead-outside-loop check with an evaluation of the instruction's intrinsic safety via `isSafeToSpeculativelyExecute`. If an instruction is guaranteed not to cause any trap or side effect (e.g., a simple addition or multiplication), it can be safely hoisted even when it does not dominate the exits and its result is used outside the loop: if the loop never executes, the resulting LLVM IR would correctly consider the right definition for the uses of the result, and the moved instruction would just be dead code.
 
 ### 2.2 Implementation
 
+#### Hoisting Mechanics
+
+For each instruction in the `InvariantSet`, the hoisting itself is performed via `moveBefore`, placing the instruction immediately before the preheader's terminator (the unconditional branch that jumps to the loop header). This ensures that hoisted instructions execute exactly once before the loop begins.
+
+A necessary precondition is that the loop has a **preheader**: a dedicated block with a single successor (the loop header) that is not part of the loop itself. If no preheader exists, code motion is skipped for that loop in this implementation.
+
+The order in which instructions are moved is determined by the order of insertion into the `InvariantSet`, which follows the RPO traversal described in the analysis phase. This guarantees that a definition is always hoisted before any instruction that depends on it, preserving correct def-use order in the preheader.
+
+#### Restricting the Candidate Set
+
+Not all loop-invariant instructions in the mathematical sense are admitted into the `InvariantSet` in this implementation. Instructions with side effects (such as store operations or function calls that alter program state, like `printf`) and instructions that read from memory (such as load instructions or calls like `strlen`) are excluded early during the analysis phase via the `mayHaveSideEffects` and `mayReadFromMemory` guards.
+
+This changes the meaning of the `InvariantSet` slightly: it no longer represents the full set of loop-invariant instructions, but rather the set of invariant instructions that are **candidates for hoisting**. Hoisting a load could read a value before it is initialised, and hoisting a store would change the number of times the side effect is observed. Excluding them early keeps the implementation simple.
+
+#### Limits of the dominance condition
 The dominance condition ensures that if the program enters the loop, the instruction will inevitably be executed before any exit is taken.
 
 However, in standard `for` loops the exit condition is evaluated *before* the loop body, so the loop may execute zero times. Because the loop can exit straight from the header without ever reaching the body, instructions inside the body **do not dominate the loop exits**.
