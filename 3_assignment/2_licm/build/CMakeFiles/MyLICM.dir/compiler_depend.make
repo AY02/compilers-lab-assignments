@@ -231,11 +231,14 @@ CMakeFiles/MyLICM.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/c
   /usr/include/llvm-19/llvm/Analysis/MemoryLocation.h \
   /usr/include/llvm-19/llvm/Analysis/ScalarEvolution.h \
   /usr/include/llvm-19/llvm/Analysis/ScalarEvolutionExpressions.h \
+  /usr/include/llvm-19/llvm/Analysis/SimplifyQuery.h \
   /usr/include/llvm-19/llvm/Analysis/TargetLibraryInfo.def \
   /usr/include/llvm-19/llvm/Analysis/TargetLibraryInfo.h \
   /usr/include/llvm-19/llvm/Analysis/TargetTransformInfo.h \
   /usr/include/llvm-19/llvm/Analysis/TensorSpec.h \
   /usr/include/llvm-19/llvm/Analysis/Utils/ImportedFunctionsInliningStatistics.h \
+  /usr/include/llvm-19/llvm/Analysis/ValueTracking.h \
+  /usr/include/llvm-19/llvm/Analysis/WithCache.h \
   /usr/include/llvm-19/llvm/CodeGen/GenVT.inc \
   /usr/include/llvm-19/llvm/CodeGen/MachineBasicBlock.h \
   /usr/include/llvm-19/llvm/CodeGen/MachineFunction.h \
@@ -356,6 +359,7 @@ CMakeFiles/MyLICM.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/c
   /usr/include/llvm-19/llvm/Support/GenericDomTree.h \
   /usr/include/llvm-19/llvm/Support/GenericLoopInfo.h \
   /usr/include/llvm-19/llvm/Support/InstructionCost.h \
+  /usr/include/llvm-19/llvm/Support/KnownBits.h \
   /usr/include/llvm-19/llvm/Support/MathExtras.h \
   /usr/include/llvm-19/llvm/Support/MemAlloc.h \
   /usr/include/llvm-19/llvm/Support/MemoryBuffer.h \
@@ -629,6 +633,8 @@ CMakeFiles/MyLICM.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/c
 
 /usr/include/llvm-19/llvm/Support/MathExtras.h:
 
+/usr/include/llvm-19/llvm/Support/KnownBits.h:
+
 /usr/include/llvm-19/llvm/Support/InstructionCost.h:
 
 /usr/include/llvm-19/llvm/Support/DynamicLibrary.h:
@@ -692,12 +698,6 @@ CMakeFiles/MyLICM.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/c
 /usr/include/llvm-19/llvm/IR/User.h:
 
 /usr/include/llvm-19/llvm/IR/Use.h:
-
-/usr/include/llvm-19/llvm/Support/Compression.h:
-
-/usr/include/llvm-19/llvm/Support/CFGUpdate.h:
-
-/usr/include/llvm-19/llvm/IR/Type.h:
 
 /usr/include/llvm-19/llvm/IR/SymbolTableListTraits.h:
 
@@ -791,6 +791,10 @@ CMakeFiles/MyLICM.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/c
 
 /usr/include/llvm-19/llvm/IR/CallingConv.h:
 
+/usr/include/llvm-19/llvm/IR/CFG.h:
+
+/usr/include/llvm-19/llvm/IR/Attributes.inc:
+
 /usr/include/c++/9/cstdio:
 
 /usr/include/c++/9/iosfwd:
@@ -872,6 +876,12 @@ CMakeFiles/MyLICM.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/c
 /usr/include/c++/9/bits/unique_ptr.h:
 
 /usr/include/c++/9/bits/stl_list.h:
+
+/usr/include/llvm-19/llvm/MC/MCSymbolTableEntry.h:
+
+/usr/include/llvm-19/llvm/IR/BasicBlock.h:
+
+/usr/include/c++/9/bits/stl_iterator.h:
 
 /usr/include/c++/9/bits/functexcept.h:
 
@@ -1053,6 +1063,8 @@ CMakeFiles/MyLICM.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/c
 
 /usr/include/c++/9/ios:
 
+/usr/include/llvm-19/llvm/Analysis/SimplifyQuery.h:
+
 /usr/include/assert.h:
 
 /usr/include/llvm-19/llvm/ADT/ilist_iterator.h:
@@ -1065,11 +1077,15 @@ CMakeFiles/MyLICM.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/c
 
 /usr/include/errno.h:
 
-/usr/include/llvm-19/llvm/MC/MCSymbolTableEntry.h:
+/usr/include/llvm-19/llvm/Analysis/ValueTracking.h:
 
-/usr/include/c++/9/bits/stl_iterator.h:
+/usr/include/llvm-19/llvm/Support/Compression.h:
 
-/usr/include/llvm-19/llvm/IR/BasicBlock.h:
+/usr/include/llvm-19/llvm/Support/CFGUpdate.h:
+
+/usr/include/llvm-19/llvm/IR/Type.h:
+
+/usr/include/llvm-19/llvm/Analysis/WithCache.h:
 
 /usr/include/llvm-c-19/llvm-c/Types.h:
 
@@ -1232,8 +1248,6 @@ CMakeFiles/MyLICM.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/c
 /usr/include/llvm-19/llvm/CodeGen/MachineFunction.h:
 
 /usr/include/c++/9/string_view:
-
-/usr/include/llvm-19/llvm/IR/Attributes.inc:
 
 /usr/include/c++/9/system_error:
 
@@ -1476,5 +1490,3 @@ CMakeFiles/MyLICM.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/c
 /usr/include/llvm-19/llvm/CodeGen/Register.h:
 
 /usr/include/llvm-19/llvm/CodeGen/TargetOpcodes.h:
-
-/usr/include/llvm-19/llvm/IR/CFG.h:

@@ -49,6 +49,48 @@ define dso_local i32 @test_basic_hoisting(i32 noundef %0, i32 noundef %1, i32 no
 }
 
 ; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @test_dominance_needed(i32 noundef %0, i32 noundef %1, i32 noundef %2) #0 {
+  %4 = alloca i32, align 4
+  %5 = alloca i32, align 4
+  %6 = alloca i32, align 4
+  %7 = alloca i32, align 4
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  store i32 %0, ptr %4, align 4
+  store i32 %1, ptr %5, align 4
+  store i32 %2, ptr %6, align 4
+  store i32 0, ptr %7, align 4
+  store i32 0, ptr %8, align 4
+  br label %10
+
+10:                                               ; preds = %21, %3
+  %11 = load i32, ptr %4, align 4
+  %12 = load i32, ptr %5, align 4
+  %13 = sdiv i32 %11, %12
+  store i32 %13, ptr %9, align 4
+  %14 = load i32, ptr %9, align 4
+  %15 = load i32, ptr %8, align 4
+  %16 = add nsw i32 %14, %15
+  %17 = load i32, ptr %7, align 4
+  %18 = add nsw i32 %17, %16
+  store i32 %18, ptr %7, align 4
+  %19 = load i32, ptr %8, align 4
+  %20 = add nsw i32 %19, 1
+  store i32 %20, ptr %8, align 4
+  br label %21
+
+21:                                               ; preds = %10
+  %22 = load i32, ptr %8, align 4
+  %23 = load i32, ptr %6, align 4
+  %24 = icmp slt i32 %22, %23
+  br i1 %24, label %10, label %25, !llvm.loop !8
+
+25:                                               ; preds = %21
+  %26 = load i32, ptr %7, align 4
+  ret i32 %26
+}
+
+; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @test_nested_hoisting(i32 noundef %0, i32 noundef %1, i32 noundef %2) #0 {
   %4 = alloca i32, align 4
   %5 = alloca i32, align 4
@@ -97,7 +139,7 @@ define dso_local i32 @test_nested_hoisting(i32 noundef %0, i32 noundef %1, i32 n
   %30 = load i32, ptr %9, align 4
   %31 = add nsw i32 %30, 1
   store i32 %31, ptr %9, align 4
-  br label %16, !llvm.loop !8
+  br label %16, !llvm.loop !9
 
 32:                                               ; preds = %16
   br label %33
@@ -106,68 +148,11 @@ define dso_local i32 @test_nested_hoisting(i32 noundef %0, i32 noundef %1, i32 n
   %34 = load i32, ptr %8, align 4
   %35 = add nsw i32 %34, 1
   store i32 %35, ptr %8, align 4
-  br label %11, !llvm.loop !9
+  br label %11, !llvm.loop !10
 
 36:                                               ; preds = %11
   %37 = load i32, ptr %7, align 4
   ret i32 %37
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local i32 @test_dominance_early_exit(i32 noundef %0, i32 noundef %1, i32 noundef %2, ptr noundef %3) #0 {
-  %5 = alloca i32, align 4
-  %6 = alloca i32, align 4
-  %7 = alloca i32, align 4
-  %8 = alloca ptr, align 8
-  %9 = alloca i32, align 4
-  %10 = alloca i32, align 4
-  %11 = alloca i32, align 4
-  store i32 %0, ptr %5, align 4
-  store i32 %1, ptr %6, align 4
-  store i32 %2, ptr %7, align 4
-  store ptr %3, ptr %8, align 8
-  store i32 0, ptr %9, align 4
-  store i32 0, ptr %10, align 4
-  br label %12
-
-12:                                               ; preds = %31, %4
-  %13 = load i32, ptr %10, align 4
-  %14 = load i32, ptr %7, align 4
-  %15 = icmp slt i32 %13, %14
-  br i1 %15, label %16, label %34
-
-16:                                               ; preds = %12
-  %17 = load ptr, ptr %8, align 8
-  %18 = load i32, ptr %10, align 4
-  %19 = sext i32 %18 to i64
-  %20 = getelementptr inbounds i32, ptr %17, i64 %19
-  %21 = load i32, ptr %20, align 4
-  %22 = icmp eq i32 %21, 0
-  br i1 %22, label %23, label %24
-
-23:                                               ; preds = %16
-  br label %34
-
-24:                                               ; preds = %16
-  %25 = load i32, ptr %5, align 4
-  %26 = load i32, ptr %6, align 4
-  %27 = mul nsw i32 %25, %26
-  store i32 %27, ptr %11, align 4
-  %28 = load i32, ptr %11, align 4
-  %29 = load i32, ptr %9, align 4
-  %30 = add nsw i32 %29, %28
-  store i32 %30, ptr %9, align 4
-  br label %31
-
-31:                                               ; preds = %24
-  %32 = load i32, ptr %10, align 4
-  %33 = add nsw i32 %32, 1
-  store i32 %33, ptr %10, align 4
-  br label %12, !llvm.loop !10
-
-34:                                               ; preds = %23, %12
-  %35 = load i32, ptr %9, align 4
-  ret i32 %35
 }
 
 ; Function Attrs: noinline nounwind uwtable

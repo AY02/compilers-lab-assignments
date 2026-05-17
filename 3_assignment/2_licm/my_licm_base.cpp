@@ -5,7 +5,6 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/ADT/SetVector.h"
 #include "llvm/Analysis/LoopIterator.h"
-#include "llvm/Analysis/ValueTracking.h"
 
 #include "llvm/IR/Dominators.h"
 
@@ -80,36 +79,29 @@ struct MyLICM: PassInfoMixin<MyLICM> {
 
   }
 
-  // Note: dominating the exit blocks of the loop is equivalent to 
-  // dominating the exiting blocks of the loop. If you are sure to 
-  // use one of the exits from a room, you are sure that you are
-  // going to be outside the room (i.e. in an exit block).
-  // Therefore, we used the exiting blocks to maintain the analysis 
-  // inside the cfg loop (no need to look outside it). Also, it appears
-  // to be literature friendly for this same reason. 
   bool dominatesAllExits(Instruction *I, Loop *L, DominatorTree &DT) {
     // Getting the parent block of the invariant instruction
     BasicBlock *BB = I->getParent();
-    // Getting the exiting blocks of the loop
-    SmallVector<BasicBlock *, 8> ExitingBlocks;
-    L->getExitingBlocks(ExitingBlocks);
+    // Getting the exit blocks of the loop
+    SmallVector<BasicBlock *, 8> ExitBlocks;
+    L->getExitBlocks(ExitBlocks);
 
     // Check whether the BB of the invariant instruction dominates
-    // all the exiting blocks. If not, return false
-    for (BasicBlock *ExitingBB : ExitingBlocks) {
-        if (!DT.dominates(BB, ExitingBB)) {
+    // all the exit blocks. If not, return false
+    for (BasicBlock *ExitBB : ExitBlocks) {
+        if (!DT.dominates(BB, ExitBB)) {
             return false;
         }
     }
     return true;
   }
 
-  // This function works for compilers that do not use an SSA form
+  // This function works for compilers that does not use an SSA form
   // but it is not used in this program since LLVM IR provides that form.
   // Therefore, each use has only one definition, and is guaranteed that, 
   // even if in the original code the instruction moved outside the loop 
   // would have overwritten an hypotethical old def outside the loop,
-  // in the SSA form there is no overwritiing definition concept.
+  // in the SSA form there is not the overwritting definition concept.
   // Example:
   // a = 3;
   // for (...) {
@@ -274,7 +266,7 @@ struct MyLICM: PassInfoMixin<MyLICM> {
       // so that also this kind of instructions can be moved, but only if these instructions
       // are safe to execute (don't cause early exits that would not be faced otherwise).
       // Note: the fact that the instructions dont't have side effects that would alter 
-      // the semantic of the program is already guaranteed by the InvariantSet construction conditions  
+      // the semantic of the program is already guaranteed by the InvariantSet construction's conditions  
       if (dominatesAllExits(I, L, DT) || isSafeToSpeculativelyExecute(I)) {
         errs() << "\tHoisting instruction: " << *I << "\n";
         I->moveBefore(PreheaderTerminator);
