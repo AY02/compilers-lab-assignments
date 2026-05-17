@@ -9,7 +9,7 @@
 // Because the instruction's only user is this internal phi node,
 // isDeadOutsideLoop inadvertently returns true. As a result, both the my_licm_base.cpp 
 // version and the my_licm.cpp version successfully hoist the instruction.
-int test_liveness_vs_safety(int a, int b, int n) {
+int test_2versions(int a, int b, int n) {
   int x = 10; 
   for (int i = 0; i < n; i++) {
     x = a + b; 
