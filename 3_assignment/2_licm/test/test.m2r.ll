@@ -7,23 +7,24 @@ target triple = "x86_64-pc-linux-gnu"
 define dso_local i32 @test_basic_hoisting(i32 noundef %0, i32 noundef %1, i32 noundef %2) #0 {
   br label %4
 
-4:                                                ; preds = %10, %3
-  %.01 = phi i32 [ 0, %3 ], [ %9, %10 ]
-  %.0 = phi i32 [ 0, %3 ], [ %11, %10 ]
+4:                                                ; preds = %11, %3
+  %.01 = phi i32 [ 0, %3 ], [ %10, %11 ]
+  %.0 = phi i32 [ 0, %3 ], [ %12, %11 ]
   %5 = icmp slt i32 %.0, %2
-  br i1 %5, label %6, label %12
+  br i1 %5, label %6, label %13
 
 6:                                                ; preds = %4
   %7 = mul nsw i32 %0, %1
-  %8 = add nsw i32 %7, %.0
-  %9 = add nsw i32 %.01, %8
-  br label %10
+  %8 = sdiv i32 %0, %1
+  %9 = add nsw i32 %7, %.0
+  %10 = add nsw i32 %.01, %9
+  br label %11
 
-10:                                               ; preds = %6
-  %11 = add nsw i32 %.0, 1
+11:                                               ; preds = %6
+  %12 = add nsw i32 %.0, 1
   br label %4, !llvm.loop !6
 
-12:                                               ; preds = %4
+13:                                               ; preds = %4
   ret i32 %.01
 }
 
@@ -31,21 +32,22 @@ define dso_local i32 @test_basic_hoisting(i32 noundef %0, i32 noundef %1, i32 no
 define dso_local i32 @test_dominance_needed(i32 noundef %0, i32 noundef %1, i32 noundef %2) #0 {
   br label %4
 
-4:                                                ; preds = %9, %3
-  %.01 = phi i32 [ 0, %3 ], [ %7, %9 ]
-  %.0 = phi i32 [ 0, %3 ], [ %8, %9 ]
+4:                                                ; preds = %10, %3
+  %.01 = phi i32 [ 0, %3 ], [ %8, %10 ]
+  %.0 = phi i32 [ 0, %3 ], [ %9, %10 ]
   %5 = sdiv i32 %0, %1
-  %6 = add nsw i32 %5, %.0
-  %7 = add nsw i32 %.01, %6
-  %8 = add nsw i32 %.0, 1
-  br label %9
+  %6 = add nsw i32 %0, %1
+  %7 = add nsw i32 %5, %.0
+  %8 = add nsw i32 %.01, %7
+  %9 = add nsw i32 %.0, 1
+  br label %10
 
-9:                                                ; preds = %4
-  %10 = icmp slt i32 %8, %2
-  br i1 %10, label %4, label %11, !llvm.loop !8
+10:                                               ; preds = %4
+  %11 = icmp slt i32 %9, %2
+  br i1 %11, label %4, label %12, !llvm.loop !8
 
-11:                                               ; preds = %9
-  ret i32 %7
+12:                                               ; preds = %10
+  ret i32 %8
 }
 
 ; Function Attrs: noinline nounwind uwtable

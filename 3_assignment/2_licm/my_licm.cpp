@@ -121,7 +121,7 @@ struct MyLICM: PassInfoMixin<MyLICM> {
   // }
   // c = a + 1;
   //
-  // BUT: in SSA it would be like this:
+  // But: in SSA it would be like this:
   // old_a = 3;
   // for (...) {
   //   new_a = 5;

@@ -246,30 +246,31 @@ struct MyLICM: PassInfoMixin<MyLICM> {
     // hoisted if hoistable, before their uses)
     for (Instruction *I : InvariantSet) {
       
-      // To be hoistable an instruction needs to dominate all of its exits,
-      // OR to not have side effects (since the worst case would be dead code).
-      // The OR is relevant, because the domination of the Exits is not 
-      // enough to guarantee that hoistable instructions are indeed hoisted:
-      // Example:
-      // a = 1;
-      // x = ...;
-      // for (i = x; i < 100; i++)
-      //   a = b + c;
-      // In this case, the instruction a = b + c; does not dominate all of
-      // its exits, since it is not guaranteed that the loop is executed (if x is >= 100
-      // you never enter the loop), and so it is not guaranteed that after the loop
-      // the instruction is always executed. In SSA a = 1 and a = b + c are 
-      // two distinct definitions, so it is possible to move a = b + c without altering 
-      // the semantic of the program (hypothetical "a" variable uses after the loop would
-      // be linked to its definition). But with the sole "dominatesAllExits" condition
-      // the instruction would not be moved. For this reason the OR condition is added,
-      // so that also this kind of instructions can be moved, but only if these instructions
-      // are safe to execute (don't cause early exits that would not be faced otherwise).
-      // Note: the fact that the instructions dont't have side effects that would alter 
-      // the semantic of the program is already guaranteed by the InvariantSet construction's conditions  
-      if (dominatesAllExits(I, L, DT) || isSafeToSpeculativelyExecute(I)) {
+      // This is the base implementation without the safety check.
+      // In this version, candidate instructions for code motion must 
+      // reside in blocks that dominate all loop exits, OR the variable 
+      // defined by the instruction must be "dead" (unused) outside the loop.
+      // 
+      // There is implementation presents a limitation, in fact it presents
+      // a safety issue, since in LLVM bypassing the dominance check just 
+      // because a variable is "dead" outside can lead to speculative execution 
+      // of "unsafe" instructions (e.g., division by zero) in the loop that are not 
+      // executed (zero-trip loops), altering the program's semantics by an early termination. 
+      // In the my_licm.cpp version we use an OR condition with 
+      // isSafeToSpeculativelyExecute(I) instead, but this implementation
+      // better adhere to the basic theoretical definition of Code Motion.
+
+      // Additionally, we noted that there is a structural quirk in how LLVM builds SSA for loops:
+      // if a value defined inside the loop is needed outside, LLVM typically 
+      // collects it using a PHI node located in the loop header (which is inside the loop). 
+      // Because the instruction's only direct user is this internal PHI node, 
+      // the isDeadOutsideLoop check will inadvertently always return true.
+      
+      if (dominatesAllExits(I, L, DT) || isDeadOutsideLoop(I, L)) {
         errs() << "\tHoisting instruction: " << *I << "\n";
         I->moveBefore(PreheaderTerminator);
+      } else {
+        errs() << "\tCannot hoist (Doesn't dominate exits and is alive outside): " << *I << "\n";
       }
     }
 

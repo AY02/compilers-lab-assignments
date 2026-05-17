@@ -9,6 +9,7 @@ int test_basic_hoisting(int a, int b, int n) {
   // Loop
   for (int i = 0; i < n; i++) {
     int x = a * b;    // Invariant (a and b are arguments)
+    int y = a / b;    // Invariant, not safe, does not dominate the exits, therefore is not hoistes
     sum += x + i;     // Variant (x is invariant, but i is not invariant)
   }
   return sum;
@@ -25,7 +26,8 @@ int test_dominance_needed(int a, int b, int n) {
   // The do-while allows the body to dominate the exiting block
   do {
     int x = a / b;  // Invariant, not safe to speculate, but dominates all exits, and therefore hoisted
-    sum += x + i;
+    int y = a + b;  // Invariant, safe to speculate and dominates all exits, both conditions are true, clearly hoisted
+    sum += x + i;   // Variant (x is invariant, but i is not invariant)
     i++;
   } while (i < n);
   

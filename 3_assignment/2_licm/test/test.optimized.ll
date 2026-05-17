@@ -8,23 +8,46 @@ define dso_local i32 @test_basic_hoisting(i32 noundef %0, i32 noundef %1, i32 no
   %4 = mul nsw i32 %0, %1
   br label %5
 
-5:                                                ; preds = %10, %3
-  %.01 = phi i32 [ 0, %3 ], [ %9, %10 ]
-  %.0 = phi i32 [ 0, %3 ], [ %11, %10 ]
+5:                                                ; preds = %11, %3
+  %.01 = phi i32 [ 0, %3 ], [ %10, %11 ]
+  %.0 = phi i32 [ 0, %3 ], [ %12, %11 ]
   %6 = icmp slt i32 %.0, %2
-  br i1 %6, label %7, label %12
+  br i1 %6, label %7, label %13
 
 7:                                                ; preds = %5
-  %8 = add nsw i32 %4, %.0
-  %9 = add nsw i32 %.01, %8
-  br label %10
+  %8 = sdiv i32 %0, %1
+  %9 = add nsw i32 %4, %.0
+  %10 = add nsw i32 %.01, %9
+  br label %11
 
-10:                                               ; preds = %7
-  %11 = add nsw i32 %.0, 1
+11:                                               ; preds = %7
+  %12 = add nsw i32 %.0, 1
   br label %5, !llvm.loop !6
 
-12:                                               ; preds = %5
+13:                                               ; preds = %5
   ret i32 %.01
+}
+
+; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @test_dominance_needed(i32 noundef %0, i32 noundef %1, i32 noundef %2) #0 {
+  %4 = sdiv i32 %0, %1
+  %5 = add nsw i32 %0, %1
+  br label %6
+
+6:                                                ; preds = %10, %3
+  %.01 = phi i32 [ 0, %3 ], [ %8, %10 ]
+  %.0 = phi i32 [ 0, %3 ], [ %9, %10 ]
+  %7 = add nsw i32 %4, %.0
+  %8 = add nsw i32 %.01, %7
+  %9 = add nsw i32 %.0, 1
+  br label %10
+
+10:                                               ; preds = %6
+  %11 = icmp slt i32 %9, %2
+  br i1 %11, label %6, label %12, !llvm.loop !8
+
+12:                                               ; preds = %10
+  ret i32 %8
 }
 
 ; Function Attrs: noinline nounwind uwtable
@@ -54,50 +77,17 @@ define dso_local i32 @test_nested_hoisting(i32 noundef %0, i32 noundef %1, i32 n
 
 13:                                               ; preds = %10
   %14 = add nsw i32 %.0, 1
-  br label %8, !llvm.loop !8
+  br label %8, !llvm.loop !9
 
 15:                                               ; preds = %8
   br label %16
 
 16:                                               ; preds = %15
   %17 = add nsw i32 %.01, 1
-  br label %5, !llvm.loop !9
+  br label %5, !llvm.loop !10
 
 18:                                               ; preds = %5
   ret i32 %.02
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local i32 @test_dominance_early_exit(i32 noundef %0, i32 noundef %1, i32 noundef %2, ptr noundef %3) #0 {
-  %5 = mul nsw i32 %0, %1
-  br label %6
-
-6:                                                ; preds = %16, %4
-  %.01 = phi i32 [ 0, %4 ], [ %15, %16 ]
-  %.0 = phi i32 [ 0, %4 ], [ %17, %16 ]
-  %7 = icmp slt i32 %.0, %2
-  br i1 %7, label %8, label %18
-
-8:                                                ; preds = %6
-  %9 = sext i32 %.0 to i64
-  %10 = getelementptr inbounds i32, ptr %3, i64 %9
-  %11 = load i32, ptr %10, align 4
-  %12 = icmp eq i32 %11, 0
-  br i1 %12, label %13, label %14
-
-13:                                               ; preds = %8
-  br label %18
-
-14:                                               ; preds = %8
-  %15 = add nsw i32 %.01, %5
-  br label %16
-
-16:                                               ; preds = %14
-  %17 = add nsw i32 %.0, 1
-  br label %6, !llvm.loop !10
-
-18:                                               ; preds = %13, %6
-  ret i32 %.01
 }
 
 ; Function Attrs: noinline nounwind uwtable
