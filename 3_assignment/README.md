@@ -214,28 +214,37 @@ define dso_local i32 @test_strange_hoist(i32 noundef %0, i32 noundef %1, i32 nou
 }
 ```
 
-Because the direct user of the instruction is this internal `phi` node, our dead-outside-loop check would almost always return `true` in this kind of conditioned loops with the exit in the loop, causing the optimization to hoist the  `x = a + b` instruction!  
+Because the direct user of the instruction is this internal `phi` node, our dead-outside-loop check would always return `true` in this kind of conditioned loops with the exit in the loop header, causing the optimization to hoist the  `x = a + b` instruction!  
 Hoisting the instruction in a non SSA form would be incorrect, because it would cause to overwrite the `x` variable before knowing whether the loop will start or not. But the SSA form prevents this with the single definition concept it provides: even by moving the `x = a + b` instruction, it is still possible to correctly evaluate the correct value of `%.01` thanks to the `phi` node in the header, that assign the value based on from where the program reach the `10` block (exit block).  
-There is indeed speculative execution of the `x = a + b` instruction moved in the preheader, that may never be used, but if the loop cycles for 100K instruction, we are saving 99'999 evaluation of the `x = a + b` instruction.  
+If the loop execution depends on runtime vaues, there is indeed speculative execution of the `x = a + b` instruction moved in the preheader, that may never be used, but if the loop cycles for 100K instruction, we are saving 99'999 evaluation of the `x = a + b` instruction. Otherwise, if it is statically evaluable that the loop never executes, the moved instruction may just result in dead code, that could be deleted with a successive DCE pass.  
 
-After making these considerations, we observed that bypassing the dominance check on this basis alone can lead to the speculative execution of unsafe instructions — such as integer division. And in conditioned loops, if they never executes (zero-trip loops) this would alter the program's semantics by causing an illegitimate trap.
+Anyway, the two conditions used in this implementation almost brings always to the `true` result, and therefore to hoist the instruction. This happens because the right side of the OR condition (the dead-outside-loop check) always returns `true` in case of a conditioned loop. While if it is not a conditioned loop, it would evaluate `false`, but only in the case in which the variable is also used after the loop. However in that case it is the right part of the condition (the dominance of the exits) that would return `true`, because in unconditioned loops (without early exits) the loop is always executed, and therefore the instructions inside it always dominates the exits. Except in one case:
 
-To resolve this, we implemented an alternative version in which we replaced the dead-outside-loop check with an evaluation of the instruction's intrinsic safety via `isSafeToSpeculativelyExecute`. The hoisting condition becomes:
+```
+int test_with_do_while_early_exits(int a, int b, int n) {
+  int x = 10;
+  do {
+      x = a + b;      // %6   
+      if (n) break;  
+      x = a + b;      // %11
+  } while (!n);       
+  return x + 1;
+}
+```
+If we consider the case of an unconditioned loop with early exit, the `x = a + b` instruction after the early exit `if (n) break;` is not hoisted. Which is correct, if we consider the C code program, but in the SSA form it could have been hoisted anyway because of the unique definition's logic that we previosuly discussed, that prevents overwriting variables and changes in semantic.
+
+After making these considerations, we observed that bypassing the dominance check on this basis alone can lead to the speculative execution of unsafe instructions, such as integer division. And in conditioned loops, if they never executes (zero-trip loops) this would alter the program's semantics by causing an illegitimate trap. This also allows to take advantage of the SSA form to exploit also that last hoisting that was not made with the previous implementation.
+
+Therefore, to achieve this dual objective, we implemented an alternative version in which we replaced the dead-outside-loop check with an evaluation of the instruction's intrinsic safety via `isSafeToSpeculativelyExecute`. The hoisting condition becomes:
 
 ```cpp
 if (dominatesAllExits(I, L, DT) || isSafeToSpeculativelyExecute(I))
 ```
 
-If the instruction is intrinsically safe (e.g. a simple addition), it is hoisted speculatively: if the loop does not run, the instruction moved would just result in dead code. If the instruction is unsafe (e.g. integer division), it is only hoisted when it dominates all exits, preserving the original program semantics exactly.
+If the instruction is intrinsically safe (like a simple addition), it is hoisted speculatively: if the loop does not run, and it can be determined statically, the instruction moved would just result in dead code, otherwise would be executed but its values would be never used. On the other side, if the instruction is unsafe (like an integer division), it is only hoisted when it dominates all exits, preserving the original program semantics exactly.
+Also, it correctly hoists the instruction considered in the previous test `test_with_do_while_early_exits`.
 
-It is also worth noting that LLVM often places internal `phi` nodes inside the loop header to collect values used outside the loop. Because the direct user of the instruction is this internal `phi` node, our dead-outside-loop check would almost always return `true`.
-
-
-replaces the dead-outside-loop check with an evaluation of the instruction's intrinsic safety via `isSafeToSpeculativelyExecute`. If an instruction is guaranteed not to cause any trap or side effect (e.g., a simple addition or multiplication), it can be safely hoisted even when it does not dominate the exits and its result is used outside the loop: if the loop never executes, the resulting LLVM IR would correctly consider the right definition for the uses of the result, and the moved instruction would just be dead code.
-
-### 2.3 Test Cases and Final Remarks
-
-The following test cases demonstrate the correctness of the implementation.
+To conclude, it is worth noting that the two conditions in the OR does not overlap. This is practically shown by the following tests:
 
 #### `test_basic_hoisting`
 
@@ -269,8 +278,9 @@ int test_dominance_needed(int a, int b, int n) {
 }
 ```
 
-The `do-while` structure guarantees that the body always executes before any exit is taken, so the body block dominates the exiting block. The dominance condition alone is sufficient, and the unsafe division is correctly hoisted.
+The `do-while` structure guarantees that the body always executes before any exit is taken, so the body block dominates the exiting block. The dominance condition alone is sufficient, and the unsafe division is correctly hoisted.    
 
+Other tests have been made to empirically show that the version covers the following cases:
 #### `test_nested_hoisting`
 
 ```c
@@ -317,17 +327,3 @@ int test_invariants_chain(int a, int b, int n) {
 ```
 
 Both `x` and `y` are loop-invariant, but `y` depends on `x`. The RPO traversal guarantees that `x` is inserted into the `InvariantSet` before `y`, so definitions are always hoisted before their uses.
-
-#### `test_2versions`
-
-```c
-int test_2versions(int a, int b, int n) {
-  int x = 10;
-  for (int i = 0; i < n; i++) {
-    x = a + b;
-  }
-  return x + 1;
-}
-```
-
-`x` is used outside the loop. A dead-outside-loop check would nonetheless return `true` here because LLVM places the `phi` node that collects `x` inside the loop header, making the instruction appear to have no users outside the loop. In our implementation this edge case does not arise: `x = a + b` is hoisted simply because `isSafeToSpeculativelyExecute` returns `true`.
