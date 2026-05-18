@@ -108,42 +108,6 @@ struct MyLICM: PassInfoMixin<MyLICM> {
     return true;
   }
 
-  // This function works for compilers that do not use an SSA form
-  // but it is not used in this program since LLVM IR provides that form.
-  // Therefore, each use has only one definition, and is guaranteed that, 
-  // even if in the original code the instruction moved outside the loop 
-  // would have overwritten an hypotethical old def outside the loop,
-  // in the SSA form there is no overwritiing definition concept.
-  // Example:
-  // a = 3;
-  // for (...) {
-  //   a = 5;
-  // }
-  // c = a + 1;
-  //
-  // But: in SSA it would be like this:
-  // old_a = 3;
-  // for (...) {
-  //   new_a = 5;
-  // }
-  // c = old_a + 1;
-  // Even if the instruction a = 5 is moved outside the loop, in the SSA
-  // form the use of a in c = a + 1 would be linked to its single 
-  // definition (old_a in this example), therefore moving a = 5 (i.e. new_a = 5) 
-  // outside the loop would just be considered dead code.
-  bool isDeadOutsideLoop(Instruction *I, Loop *L) {
-    // for all uses of the instruction I
-    for (User *U : I->users()) {
-      if (Instruction *UseInst = dyn_cast<Instruction>(U)) {
-        // If the parent's block of the instruction is not
-        // in the loop, the variable is alive outside the loop
-        if (!L->contains(UseInst->getParent())) {
-          return false; // uses outside the loop
-        }
-      }
-    }
-    return true; // no uses outside the loop, variable is hoistable
-  }
 
   void printLoopInvariantsInLoop(Loop *L, LoopInfo &LI, DominatorTree &DT) {
 

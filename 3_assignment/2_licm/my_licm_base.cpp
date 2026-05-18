@@ -96,36 +96,21 @@ struct MyLICM: PassInfoMixin<MyLICM> {
     return true;
   }
 
-  // This function works for compilers that does not use an SSA form
-  // but it is not used in this program since LLVM IR provides that form.
-  // Therefore, each use has only one definition, and is guaranteed that, 
-  // even if in the original code the instruction moved outside the loop 
-  // would have overwritten an hypotethical old def outside the loop,
-  // in the SSA form there is not the overwritting definition concept.
-  // Example:
-  // a = 3;
-  // for (...) {
-  //   a = 5;
-  // }
-  // c = a + 1;
-  //
-  // BUT: in SSA it would be like this:
-  // old_a = 3;
-  // for (...) {
-  //   new_a = 5;
-  // }
-  // c = old_a + 1;
-  // Even if the instruction a = 5 is moved outside the loop, in the SSA
-  // form the use of a in c = a + 1 would be linked to its single 
-  // definition (old_a in this example), therefore moving a = 5 (i.e. new_a = 5) 
-  // outside the loop would just be considered dead code.
+  // This function takes advantage of the SSA form provided by LLVM IR, in
+  // which each definition is unique. If a value defined inside the loop
+  // needs to be used outside, LLVM explicitly connects it to a User outside 
+  // the loop (typically a PHI node in the exit block). 
+  // Therefore, to check if an instruction's result is "alive" outside the loop,
+  // we just need to iterate over its direct users and check their basic blocks.
   bool isDeadOutsideLoop(Instruction *I, Loop *L) {
-    // for all uses of the instruction I
+    // for all users of the instruction I
     for (User *U : I->users()) {
-      if (Instruction *UseInst = dyn_cast<Instruction>(U)) {
-        // If the parent's block of the instruction is not
+      if (Instruction *UserInst = dyn_cast<Instruction>(U)) {
+        // If the parent's block of the user instruction is not
         // in the loop, the variable is alive outside the loop
-        if (!L->contains(UseInst->getParent())) {
+        // because in the SSA form there are no uses before definitions
+        // (definitions are unique)
+        if (!L->contains(UserInst->getParent())) {
           return false; // uses outside the loop
         }
       }
@@ -260,11 +245,12 @@ struct MyLICM: PassInfoMixin<MyLICM> {
       // isSafeToSpeculativelyExecute(I) instead, but this implementation
       // better adhere to the basic theoretical definition of Code Motion.
 
-      // Additionally, we noted that there is a structural quirk in how LLVM builds SSA for loops:
-      // if a value defined inside the loop is needed outside, LLVM typically 
-      // collects it using a PHI node located in the loop header (which is inside the loop). 
-      // Because the instruction's only direct user is this internal PHI node, 
-      // the isDeadOutsideLoop check will inadvertently always return true.
+      // Additionally, because in conditioned loops LLVM builds SSA with a phi
+      // node located in the loop header (which is inside the loop), to collect the
+      // value defined inside the loop that are needed outside, the instruction's
+      // only direct user ends up being this internal phi node, and therefore 
+      // the isDeadOutsideLoop check will inadvertently always return true
+      // in conditioned loops like the for cycles.
       
       if (dominatesAllExits(I, L, DT) || isDeadOutsideLoop(I, L)) {
         errs() << "\tHoisting instruction: " << *I << "\n";
