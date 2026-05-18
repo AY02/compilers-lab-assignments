@@ -134,18 +134,31 @@ Because LLVM IR strictly enforces **Static Single Assignment (SSA)** form, the s
 
 Consequently, in the context of LLVM, the prerequisites for code motion are vastly simplified. Assuming the instruction is invariant and has no side effects, the rule reduces to the fourth condition:
 
-> **The instruction must dominate all loop exits**
+**The instruction must dominate all loop exits**
 
-Or to relaxed formulations. In fact, the fourth condition in practice is quite strict: the instruction must dominate all loop exits. This alone can be overly conservative: in a standard `for` loop the body never dominates the exits, since the loop may not execute at all. It is therefore possible to relax this condition: if the variable defined by the instruction is **dead outside the loop** (i.e. it has no uses after the loop exits), hoisting it cannot affect the observable behavior of the program, and the instruction becomes a candidate for code motion regardless of dominance.  
-A further relaxation, and the one adopted in the main implementation, replaces the dead-outside-loop check with an evaluation of the instruction's intrinsic safety via `isSafeToSpeculativelyExecute`. If an instruction is guaranteed not to cause any trap or side effect (e.g., a simple addition or multiplication), it can be safely hoisted even when it does not dominate the exits and its result is used outside the loop: if the loop never executes, the resulting LLVM IR would correctly consider the right definition for the uses of the result, and the moved instruction would just be dead code.
+#### Limits of the dominance condition
+In practice, the fourth condition can be be overly conservative: in general, whenever the execution of a loop depends on a condition (e.g. a `for` loop), there are no guarantees that the body of the loop will be executed. Therefore, the body never dominates the exits, and no instruction will be hoisted.  
+But reflecting on the reasons determining the presence of this condition, it is possible to formulate "relaxed" conditions that, even if the instruction does not dominate all loop exits, still allow to hoist the instruction in some specific cases. In fact, the reasons behind the fourth condition are to be retrieved in the semantic alteration caused by a hoisted instruction in a case like the following one:
+```c
+int x = 10;
+for (int i = 0; i < n; i++) {
+  x = 5;
+}
+y =  x + 1;
+```
+Here, the hoist of the instruction `x = 5` would force the propagation of the definition inside the loop, even if the loop never executes (n <= 0), altering the semantic of the program.
+The fourth condition prevents this by ensuring that the hoisting is effected only if the `x = 5` instruction was a forced path (dominates the exits of the loop).
+But this condition can be "relaxed" if the `x` variable is meant to be used only in the loop, because even if the instruction inside the loop is hoisted, there would not be alteration of the semantic (no instruction outside the loop would use that forcely propagated definition). 
+ 
+A further relaxation, which strongly relies on the SSA form used in LLVM, will be shown in the 2.2 implementation section, because of its strict dependency to implementation considerations.
 
 ### 2.2 Implementation
 
 #### Hoisting Mechanics
 
-For each instruction in the `InvariantSet`, the hoisting itself is performed via `moveBefore`, placing the instruction immediately before the preheader's terminator (the unconditional branch that jumps to the loop header). This ensures that hoisted instructions execute exactly once before the loop begins.
+For each instruction in the `InvariantSet`, the hoisting itself is performed via `moveBefore`, placing the instruction immediately before the preheader's terminator (the unconditional branch that jumps to the loop header, last instruction of the preheader block). This ensures that hoisted instructions execute exactly once before the loop begins.
 
-A necessary precondition is that the loop has a **preheader**: a dedicated block with a single successor (the loop header) that is not part of the loop itself. If no preheader exists, code motion is skipped for that loop in this implementation.
+For this reason, a necessary precondition is that the loop has a **preheader**: a dedicated block with a single successor (the loop header) that is not part of the loop itself. If no preheader exists, code motion is skipped for that loop in this implementation. It is possible to simply overcome this limitation by executing the LLVM loop-simplify optimization before our optimization, but it is not needed for the tests we propose.
 
 The order in which instructions are moved is determined by the order of insertion into the `InvariantSet`, which follows the RPO traversal described in the analysis phase. This guarantees that a definition is always hoisted before any instruction that depends on it, preserving correct def-use order in the preheader.
 
@@ -153,16 +166,61 @@ The order in which instructions are moved is determined by the order of insertio
 
 Not all loop-invariant instructions in the mathematical sense are admitted into the `InvariantSet` in this implementation. Instructions with side effects (such as store operations or function calls that alter program state, like `printf`) and instructions that read from memory (such as load instructions or calls like `strlen`) are excluded early during the analysis phase via the `mayHaveSideEffects` and `mayReadFromMemory` guards.
 
-This changes the meaning of the `InvariantSet` slightly: it no longer represents the full set of loop-invariant instructions, but rather the set of invariant instructions that are **candidates for hoisting**. Hoisting a load could read a value before it is initialised, and hoisting a store would change the number of times the side effect is observed. Excluding them early keeps the implementation simple.
+This changes the meaning of the `InvariantSet` slightly: it no longer represents the full set of loop-invariant instructions, but rather the set of invariant instructions that are candidates for hoisting. Hoisting a load could read a value before it is initialised, and hoisting a store would change the number of times the side effect is observed. Excluding them early keeps the implementation simple.
 
-#### Limits of the dominance condition
-The dominance condition ensures that if the program enters the loop, the instruction will inevitably be executed before any exit is taken.
+#### Implementation to overcome the practical limits of the dominance condition
+As we discussed before at the end of the section 2.1, the dominance condition can be overly conservative. A first relaxed implementation relaxes the dominance condition by introducing an OR with a dead-outside-loop check for the considered instruction. The `dominatesAllExits` condition is evaluated by iterating over the exiting blocks of the loop (the blocks that have a successor outside the loop) and verifying that the block containing the candidate instruction dominates all of them via the `DominatorTree`. If this condition is not satisfied, the instruction is still hoisted if `isDeadOutsideLoop` returns `true`, which checks that all uses of the instruction are contained within the loop itself:
 
-However, in standard `for` loops the exit condition is evaluated *before* the loop body, so the loop may execute zero times. Because the loop can exit straight from the header without ever reaching the body, instructions inside the body **do not dominate the loop exits**.
+```cpp
+if (dominatesAllExits(I, L, DT) || isDeadOutsideLoop(I, L))
+```
 
-To handle this case, the "dead outside the loop" branch of the fourth condition would theoretically allow hoisting. In practice, however, bypassing the dominance check on this basis alone can lead to the **speculative execution** of unsafe instructions — such as integer division — in zero-trip loops, altering the program's semantics by causing an illegitimate trap.
+This guarantees that the dominance condition is always evaluated first, and only if it is not satisfied, the relaxed condition is checked. In this way, instructions contained in the `InvariantSet` that are guaranteed to execute whenever the loop runs are always hoisted, while instructions that do not dominate the exits are hoisted only if their result cannot affect any computation outside the loop.  
+It is interesting to note that in the SSA form, this produces a paradoxal effect: it hoists instructions that, without the SSA form, semantically should not be hoistable, but at the same time SSA preserves the semantic of the program. Let's take a look at this example:
 
-To resolve this, we replace the dead-variable check with an evaluation of the instruction's intrinsic safety via `isSafeToSpeculativelyExecute`. The final hoisting condition becomes:
+```
+int test_strange_hoist(int a, int b, int n) {
+  int x = 10; 
+  for (int i = 0; i < n; i++) {
+    x = a + b; 
+  }
+  return x + 1;
+}
+```
+
+In this case, it should not be possible to hoist the `x = a + b` instruction without altering the semantic of the program. But, because of how the SSA works, the `x = a + b` instruction is considered dead at the end of the loop. In fact, LLVM places internal `phi` nodes inside the loop header to collect values used outside the loop:
+
+```
+define dso_local i32 @test_strange_hoist(i32 noundef %0, i32 noundef %1, i32 noundef %2) #0 {
+  br label %4
+
+4:                                                ; preds = %8, %3
+  %.01 = phi i32 [ 10, %3 ], [ %7, %8 ]           ; this is the phi node that collect the value 
+  %.0 = phi i32 [ 0, %3 ], [ %9, %8 ]
+  %5 = icmp slt i32 %.0, %2
+  br i1 %5, label %6, label %10
+
+6:                                                ; preds = %4
+  %7 = add nsw i32 %0, %1
+  br label %8
+
+8:                                                ; preds = %6
+  %9 = add nsw i32 %.0, 1
+  br label %4, !llvm.loop !6
+
+10:                                               ; preds = %4
+  %11 = add nsw i32 %.01, 1
+  ret i32 %11
+}
+```
+
+Because the direct user of the instruction is this internal `phi` node, our dead-outside-loop check would almost always return `true` in this kind of conditioned loops with the exit in the loop, causing the optimization to hoist the  `x = a + b` instruction!  
+Hoisting the instruction in a non SSA form would be incorrect, because it would cause to overwrite the `x` variable before knowing whether the loop will start or not. But the SSA form prevents this with the single definition concept it provides: even by moving the `x = a + b` instruction, it is still possible to correctly evaluate the correct value of `%.01` thanks to the `phi` node in the header, that assign the value based on from where the program reach the `10` block (exit block).  
+There is indeed speculative execution of the `x = a + b` instruction moved in the preheader, that may never be used, but if the loop cycles for 100K instruction, we are saving 99'999 evaluation of the `x = a + b` instruction.  
+
+After making these considerations, we observed that bypassing the dominance check on this basis alone can lead to the speculative execution of unsafe instructions — such as integer division. And in conditioned loops, if they never executes (zero-trip loops) this would alter the program's semantics by causing an illegitimate trap.
+
+To resolve this, we implemented an alternative version in which we replaced the dead-outside-loop check with an evaluation of the instruction's intrinsic safety via `isSafeToSpeculativelyExecute`. The hoisting condition becomes:
 
 ```cpp
 if (dominatesAllExits(I, L, DT) || isSafeToSpeculativelyExecute(I))
@@ -171,6 +229,9 @@ if (dominatesAllExits(I, L, DT) || isSafeToSpeculativelyExecute(I))
 If the instruction is intrinsically safe (e.g. a simple addition), it is hoisted speculatively: if the loop does not run, the instruction moved would just result in dead code. If the instruction is unsafe (e.g. integer division), it is only hoisted when it dominates all exits, preserving the original program semantics exactly.
 
 It is also worth noting that LLVM often places internal `phi` nodes inside the loop header to collect values used outside the loop. Because the direct user of the instruction is this internal `phi` node, our dead-outside-loop check would almost always return `true`.
+
+
+replaces the dead-outside-loop check with an evaluation of the instruction's intrinsic safety via `isSafeToSpeculativelyExecute`. If an instruction is guaranteed not to cause any trap or side effect (e.g., a simple addition or multiplication), it can be safely hoisted even when it does not dominate the exits and its result is used outside the loop: if the loop never executes, the resulting LLVM IR would correctly consider the right definition for the uses of the result, and the moved instruction would just be dead code.
 
 ### 2.3 Test Cases and Final Remarks
 
