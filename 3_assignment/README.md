@@ -136,7 +136,7 @@ Consequently, in the context of LLVM, the prerequisites for code motion are vast
 
 > **The instruction must dominate all loop exits**
 
-Or to relaxed formulations. In fact, the fourth condition in practice is quite strict: the instruction must dominate all loop exits. This alone can be overly conservative: in a standard `for` loop the body never dominates the exits, since the loop may not execute at all. It is therefore possible to relax this condition: if the variable defined by the instruction is **dead outside the loop** (i.e. it has no uses after the loop exits), hoisting it cannot affect the observable behavior of the program, and the instruction becomes a candidate for code motion regardless of dominance.
+Or to relaxed formulations. In fact, the fourth condition in practice is quite strict: the instruction must dominate all loop exits. This alone can be overly conservative: in a standard `for` loop the body never dominates the exits, since the loop may not execute at all. It is therefore possible to relax this condition: if the variable defined by the instruction is **dead outside the loop** (i.e. it has no uses after the loop exits), hoisting it cannot affect the observable behavior of the program, and the instruction becomes a candidate for code motion regardless of dominance.  
 A further relaxation, and the one adopted in the main implementation, replaces the dead-outside-loop check with an evaluation of the instruction's intrinsic safety via `isSafeToSpeculativelyExecute`. If an instruction is guaranteed not to cause any trap or side effect (e.g., a simple addition or multiplication), it can be safely hoisted even when it does not dominate the exits and its result is used outside the loop: if the loop never executes, the resulting LLVM IR would correctly consider the right definition for the uses of the result, and the moved instruction would just be dead code.
 
 ### 2.2 Implementation
@@ -168,7 +168,7 @@ To resolve this, we replace the dead-variable check with an evaluation of the in
 if (dominatesAllExits(I, L, DT) || isSafeToSpeculativelyExecute(I))
 ```
 
-If the instruction is intrinsically safe (e.g., a simple addition), it is hoisted speculatively: if the loop does not run, the CPU merely computes an unused value without causing any harm. If the instruction is unsafe (e.g., integer division), it is only hoisted when it dominates all exits, preserving the original program semantics exactly.
+If the instruction is intrinsically safe (e.g. a simple addition), it is hoisted speculatively: if the loop does not run, the instruction moved would just result in dead code. If the instruction is unsafe (e.g. integer division), it is only hoisted when it dominates all exits, preserving the original program semantics exactly.
 
 It is also worth noting that LLVM often places internal `phi` nodes inside the loop header to collect values used outside the loop. Because the direct user of the instruction is this internal `phi` node, our dead-outside-loop check would almost always return `true`.
 
