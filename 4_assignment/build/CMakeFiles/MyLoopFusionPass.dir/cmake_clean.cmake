@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/MyLoopFusionPass.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/my_loop_fusion.cpp.o"
-  "CMakeFiles/MyLoopFusionPass.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/my_loop_fusion.cpp.o.d"
+  "CMakeFiles/MyLoopFusionPass.dir/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/my_loop_fusion.cpp.o"
+  "CMakeFiles/MyLoopFusionPass.dir/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/my_loop_fusion.cpp.o.d"
   "libMyLoopFusionPass.pdb"
   "libMyLoopFusionPass.so"
 )

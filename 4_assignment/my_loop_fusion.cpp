@@ -65,6 +65,16 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // - the exit block of the first is the preheader of the second
     // - the preheader of the second loop only contains the branch
     else if (!L0->isGuarded() && !L1->isGuarded()){
+        errs() << "\n";
+        // L0->printAsOperand(errs(), false); WE CANNOT PRINT A LOOP AS AN OPERAND
+        errs() << " ";
+        L0->getExitBlock()->printAsOperand(errs(), false);
+        errs() << "\n";
+        // L1->printAsOperand(); //  WE CANNOT PRINT A LOOP AS AN OPERAND
+        errs() << " ";
+        L1->getLoopPreheader()->printAsOperand(errs(), false);
+        errs() << "\n";
+
       if (L0->getExitBlock() == L1->getLoopPreheader() 
           && L0->getExitBlock() != nullptr
           && L1->getLoopPreheader()->size() == 1){

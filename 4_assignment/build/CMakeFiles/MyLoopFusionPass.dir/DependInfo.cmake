@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/my_loop_fusion.cpp" "CMakeFiles/MyLoopFusionPass.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/my_loop_fusion.cpp.o" "gcc" "CMakeFiles/MyLoopFusionPass.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/my_loop_fusion.cpp.o.d"
+  "/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/my_loop_fusion.cpp" "CMakeFiles/MyLoopFusionPass.dir/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/my_loop_fusion.cpp.o" "gcc" "CMakeFiles/MyLoopFusionPass.dir/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/my_loop_fusion.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.
