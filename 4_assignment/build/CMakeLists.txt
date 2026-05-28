@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(LoopFusion-pass)
+project(MyLoopFusion-pass)
 
 #===============================================================================
 # 1. LOAD LLVM CONFIGURATION
@@ -33,9 +33,9 @@ endif()
 #===============================================================================
 # 3. ADD THE TARGET
 #===============================================================================
-add_library(LoopFusionPass SHARED ../LoopFusionPass.cpp)
+add_library(MyLoopFusionPass SHARED ../my_loop_fusion.cpp)
 
 # Allow undefined symbols in shared objects on Darwin (this is the default
 # behaviour on Linux)
-target_link_libraries(LoopFusionPass
+target_link_libraries(MyLoopFusionPass
   "$<$<PLATFORM_ID:Darwin>:-undefined dynamic_lookup>")

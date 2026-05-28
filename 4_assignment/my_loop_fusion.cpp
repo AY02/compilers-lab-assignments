@@ -14,7 +14,10 @@ namespace {
 
 struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
-  void checking_conditions(Loop* L0, Loop* L1, DominatorTree &DT, PostDominatorTree &PDT){
+  // ale proposes to make prooning before the the function (e.g. removing the 
+  // loops that have more exit blocks, etc.)
+  // order of conditions can be modified
+  bool checking_conditions(Loop* L0, Loop* L1, DominatorTree &DT, PostDominatorTree &PDT){
 
     // 1) adjacency condition
 
@@ -26,6 +29,16 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // Note 2: despite Note 1 and what we told about the case where both the loops are guarded, 
     // the loops can still be CF equivalent but only if the guard conditions are the same. 
     // Therefore, in the adjacency analysis we can check that case aswell.
+
+    // Note 3: considering that we don't allow instructions to be between the two loops,
+    // if there are more exit blocks it is guaranteed that the 3rd condition is not
+    // satisfied, therefore we just analize the case with just one exit block.  
+    // 
+    // should I check that EVERY exit block of the loops converges on the pre-header 
+    // of the second loop or for its guard? 
+    // I think that's already given, because of the 3rd condition if there are more
+    // exit blocks and we doesn't want to have instrusctions between the two loops
+
     
     bool adjacent = false;
 
@@ -36,12 +49,12 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // - the guard of the second only contains that control statement
     // - the preheader of the second loop only contains the branch 
     if (L0->isGuarded() && L1->isGuarded()){
-      CondBrInst *Guard0 = L0->getLoopGuardBranch();
-      CondBrInst *Guard1 = L1->getLoopGuardBranch();
+      BranchInst *Guard0 = L0->getLoopGuardBranch();
+      BranchInst *Guard1 = L1->getLoopGuardBranch();
       if ( (Guard0->getSuccessor(0) == Guard1->getParent()     // 1st ...
             || Guard0->getSuccessor(1) == Guard1->getParent()) // ... 1st
-          && Guard0->getCondition() == Guard1->getCondition()  // 2nd
-          && Guard1->getParent()->size() == 1                  // 3rd, size == 1 is weak?
+          && Guard0->getCondition() == Guard1->getCondition()  // 2nd 
+          && Guard1->getParent()->size() == 1                  // 3rd
           && L1->getLoopPreheader()->size() == 1){             // 4th
           adjacent = true;
         }
@@ -51,19 +64,18 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // The loops are adjacent if:
     // - the exit block of the first is the preheader of the second
     // - the preheader of the second loop only contains the branch
-    
-    // should I check that EVERY exit block of the loops converges on the exit block? 
-    // I think that's already given
     else if (!L0->isGuarded() && !L1->isGuarded()){
-      if (L0->getExitBlock() == L1->getLoopPreheader() && L0->getExitBlock() != nullptr){
-        if (L1->getLoopPreheader()->size() == 1){   // is size too weak?
-          adjacent = true;
-        }
+      if (L0->getExitBlock() == L1->getLoopPreheader() 
+          && L0->getExitBlock() != nullptr
+          && L1->getLoopPreheader()->size() == 1){
+            adjacent = true;
       }
     }   
 
     /**************/
-    // 2)
+    // 2) Same number of iterations
+
+
 
     /**************/
     // 3) Control Flow equivalence
@@ -79,22 +91,23 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // by the header of the first (every time the header of the second is executed,
     // you always executed the first loop). 
 
+    // If the loops are both guarded but have the same condition...
+
     bool cf_equivalent = false;
 
     BasicBlock *Header0 = L0->getHeader();
     BasicBlock *Header1 = L1->getHeader();
 
-    // is this check necesasary?
-    if (Header0 != nullptr && Header1 != nullptr){
-      if (DT.dominates(Header0, Header1) 
+    if (DT.dominates(Header0, Header1) 
         && PDT.dominates(Header1, Header0))
         cf_equivalent = true;
-    }
     
 
     /**************/
-    // 4)
+    // 4) 
 
+
+    return adjacent && cf_equivalent;
   }
 
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
@@ -106,48 +119,14 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
     PostDominatorTree &PDT = FAM.getResult<PostDominatorTreeAnalysis>(F);
 
-    // THIS IS WHAT I MADE IN CLASS: (TO BE REMOVED)
-    // 1) adjacent loops
-    bool adjacent = false;
+    auto it = LI.begin();
+    Loop *L0 = *it;
+    auto next_it = it;
+    next_it++;
+    Loop *L1 = *next_it;
 
-    // simple case: checking only top level loops
-    for (auto it = LI.begin(); it != LI.end(); ++it) {
-      Loop *TLL_0 = *it;
-      auto next_it = it;
-      next_it++;
-
-      // if there is a successive loop
-      if (next_it != LI.end()){
-        Loop *TLL_1 = *next_it;
-
-        // loop 0 is guarded
-        if (TLL_0->isGuarded()){
-          CondBrInst *Instr_Guard = TLL_0->getLoopGuardBranch();
-
-          BasicBlock *TLL_1_Entry = nullptr;
-          if (TLL_1->isGuarded()) {
-              TLL_1_Entry = TLL_1->getLoopGuardBranch()->getParent();
-          } else {
-              TLL_1_Entry = TLL_1->getLoopPreheader();
-          }
-
-          if (Instr_Guard->getSuccessor(0) == TLL_1_Entry || Instr_Guard->getSuccessor(1) == TLL_1_Entry){
-            if (TLL_1_Entry != nullptr){
-              adjacent = true;
-            }
-          }
-        }
-
-        // loop 0 is not guarded
-        else {
-          if (TLL_0->getExitBlock() == TLL_1->getLoopPreheader() && TLL->getExitBlock() != nullptr){
-            if (TLL_1->getLoopPreheader()->size() == 1){
-              adjacent = true;
-            }
-          }
-        }
-      }
-    }    
+    bool value = checking_conditions(L0, L1, DT, PDT);
+    errs() << "\nConditions value for test:" << value <<"\n";
 
     errs() << "\n";
 
@@ -166,7 +145,7 @@ llvm::PassPluginLibraryInfo getMyLoopFusionPassPluginInfo() {
             PB.registerPipelineParsingCallback(
                 [](StringRef Name, FunctionPassManager &FPM,
                    ArrayRef<PassBuilder::PipelineElement>) {
-                  if (Name == "loop-fusion-pass") { // flag da terminale
+                  if (Name == "my-loop-fusion") { // flag da terminale
                     FPM.addPass(MyLoopFusionPass());
                     return true;
                   }
