@@ -106,7 +106,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     /**************/
     // 4) 
 
-
+    errs() << "Adjacency condition: " << adjacent << "\n";
+    errs() << "CF equivalence condition: " << cf_equivalent << "\n";
     return adjacent && cf_equivalent;
   }
 
