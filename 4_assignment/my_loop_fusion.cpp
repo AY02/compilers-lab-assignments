@@ -33,13 +33,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // Note 3: considering that we don't allow instructions to be between the two loops,
     // if there are more exit blocks it is guaranteed that the 3rd condition is not
     // satisfied, therefore we just analize the case with just one exit block.  
-    // 
-    // should I check that EVERY exit block of the loops converges on the pre-header 
-    // of the second loop or for its guard? 
-    // I think that's already given, because of the 3rd condition if there are more
-    // exit blocks and we doesn't want to have instrusctions between the two loops
-
-    
+       
     bool adjacent = false;
 
     // CASE: both loops are guarded
@@ -65,16 +59,6 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // - the exit block of the first is the preheader of the second
     // - the preheader of the second loop only contains the branch
     else if (!L0->isGuarded() && !L1->isGuarded()){
-        errs() << "\n";
-        // L0->printAsOperand(errs(), false); WE CANNOT PRINT A LOOP AS AN OPERAND
-        errs() << " ";
-        L0->getExitBlock()->printAsOperand(errs(), false);
-        errs() << "\n";
-        // L1->printAsOperand(); //  WE CANNOT PRINT A LOOP AS AN OPERAND
-        errs() << " ";
-        L1->getLoopPreheader()->printAsOperand(errs(), false);
-        errs() << "\n";
-
       if (L0->getExitBlock() == L1->getLoopPreheader() 
           && L0->getExitBlock() != nullptr
           && L1->getLoopPreheader()->size() == 1){
@@ -112,6 +96,16 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         && PDT.dominates(Header1, Header0))
         cf_equivalent = true;
     
+    // Relaxed condition for both loops guarded.
+    // Note that this relaxation assumes that L0 is 
+    // the loop that executes first 
+    if (L0->isGuarded() && L1->isGuarded()){
+      if (L0->getLoopGuardBranch()->getCondition() 
+        == L1->getLoopGuardBranch()->getCondition()){
+          cf_equivalent = true;
+      }
+    }
+    
 
     /**************/
     // 4) 
@@ -136,7 +130,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     next_it++;
     Loop *L1 = *next_it;
 
-    bool value = checking_conditions(L0, L1, DT, PDT);
+    bool value = checking_conditions(L1, L0, DT, PDT);
     errs() << "\nConditions value for test:" << value <<"\n";
 
     errs() << "\n";
