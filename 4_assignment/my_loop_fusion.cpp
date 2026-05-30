@@ -86,7 +86,6 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // The pre-header of the second loop must not contain any instructions other
     // than the unconditional jump to the header.
     BasicBlock *Preheader1 = L1->getLoopPreheader();
-    // The pre-header of the second loop must have size 1.
     if (Preheader1 && Preheader1->size() != 1)
       return false;
     // The guard of the second loop (if it exists) must have only the comparison instruction
