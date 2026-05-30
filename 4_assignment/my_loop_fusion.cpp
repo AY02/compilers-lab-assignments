@@ -17,7 +17,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
   // Assumptions:
   // - LA and LB are siblings.
   // - Both loops are in canonical form.
-  bool checking_conditions(Loop* LA, Loop* LB, DominatorTree &DT, PostDominatorTree &PDT) {
+  bool checking_conditions(Loop* LA, Loop* LB, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo *DI) {
 
     // First pruning: If one loop is guarded while the other is unguarded, then they cannot merge
     // because they do not satisfy condition 3.
@@ -25,9 +25,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     BranchInst *GuardB = LB->getLoopGuardBranch();
     bool isLAGuarded = (GuardA != nullptr);
     bool isLBGuarded = (GuardB != nullptr);
-    if (isLAGuarded != isLBGuarded) {
+    if (isLAGuarded != isLBGuarded)
       return false;
-    }
 
     // Second pruning: If both loops are guarded and have a logically different guard condition,
     // then they cannot merge because they do not satisfy condition 3.
@@ -36,8 +35,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       Value *CB = GuardB->getCondition();
       // The two loops use different registers for comparison.
       if (CA != CB) {
-        auto *IA = dyn_cast<Instruction>(CA);
-        auto *IB = dyn_cast<Instruction>(CB);
+        Instruction *IA = dyn_cast<Instruction>(CA);
+        Instruction *IB = dyn_cast<Instruction>(CB);
         if (IA && IB) {
           // The definition of the comparison registers uses the same operators and operands.
           if (!IA->isIdenticalTo(IB))
@@ -55,6 +54,11 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     BasicBlock *ExitingBlockA = LA->getExitingBlock();
     BasicBlock *ExitingBlockB = LB->getExitingBlock();
     if (!ExitingBlockA || !ExitingBlockB)
+      return false;
+    
+    // Fourth pruning: Both loops have no internal nesting. Otherwise, the implementation of
+    // condition 4 becomes significantly more complicated.
+    if (!LA->isInnermost() || !LB->isInnermost())
       return false;
 
     // Condition 3: Control Flow Equivalence
@@ -93,107 +97,52 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     BranchInst *Guard1 = L1->getLoopGuardBranch();
     if (Guard1 && Guard1->getParent()->size() > 2)
       return false;
+    
+    // Condition 2: Trip Count Equivalence
+    const SCEV *TripCount0 = SE->getBackedgeTakenCount(L0);
+    const SCEV *TripCount1 = SE->getBackedgeTakenCount(L1);
+    // If at least one of the two algebraic expressions of the trip count could not be calculated,
+    // then the two loops cannot be merged.
+    if (isa<SCEVCouldNotCompute>(TripCount0) || isa<SCEVCouldNotCompute>(TripCount1))
+      return false;
+    // If the algebraic expressions of the trip counts are different, then they cannot be merged.
+    if (TripCount0 != TripCount1)
+      return false;
 
-
-    // QUI FINISCONO LE MIE MODIFICHE
-
-    /*
-    // 1) adjacency condition
-
-    // Note 1: because of the 3rd condition, it is useless to verify whether the two loops are adjacent 
-    // loops if they are guarded and unguarded, or both guarded: they will always result in false for 
-    // the 3rd condition (since they are not control flow (CF) equivalent). Therefore, we only analize
-    // the case in which they are both unguarded (check Note 2 for more details)
-
-    // Note 2: despite Note 1 and what we told about the case where both the loops are guarded, 
-    // the loops can still be CF equivalent but only if the guard conditions are the same. 
-    // Therefore, in the adjacency analysis we can check that case aswell.
-    // Nota di Alessio: Non e' una cosa banale in quanto siamo in SSA. Anche se i due loop avessero una condizione
-    // di guardia logicamente corretta, in SSA utilizzerebbero registri diversi.
-
-    // Note 3: considering that we don't allow instructions to be between the two loops,
-    // if there are more exit blocks it is guaranteed that the 3rd condition is not
-    // satisfied, therefore we just analize the case with just one exit block.
-    // Nota di Alessio: In realta', il primo loop deve avere un solo exiting block perche' dobbiamo avere la garanzia
-    // che i due loop abbiano lo stesso trip count.
-    // Se il secondo loop non avesse un'uscita anticipata, allora i due loop avrebbero un trip count diverso e quindi
-    // la condizione 2 non verrebbe rispettata.
-    // Quindi, il pruning e' il seguente: il primo loop deve avere un solo exiting block (e quindi un solo exit block).
-
-    bool adjacent = false;
-
-    // CASE: both loops are guarded
-    // The loops are adjacent if:
-    // - the guard of the first points to the guard of the second
-    // - the guard conditions are the same
-    // - the guard of the second only contains that control statement
-    // - the preheader of the second loop only contains the branch 
-    if (isL0Guarded && isL1Guarded){
-      if ( (Guard0->getSuccessor(0) == Guard1->getParent()     // 1st ...
-            || Guard0->getSuccessor(1) == Guard1->getParent()) // ... 1st
-          // && Guard0->getCondition() == Guard1->getCondition()  // 2nd 
-          && Guard1->getParent()->size() == 1                  // 3rd
-          && L1->getLoopPreheader()->size() == 1){             // 4th
-          adjacent = true;
+    // Condition 4: Absence of Negative Dependencies
+    // First loop memory access instructions.
+    SmallVector<Instruction*, 16> MemInsts0;
+    for (BasicBlock *BB : L0->blocks()) {
+      for (Instruction &I : *BB) {
+        if (I.mayReadOrWriteMemory())
+          MemInsts0.push_back(&I);
+      }
+    }
+    // Second loop memory access instructions.
+    SmallVector<Instruction*, 16> MemInsts1;
+    for (BasicBlock *BB : L1->blocks()) {
+      for (Instruction &I : *BB) {
+        if (I.mayReadOrWriteMemory())
+          MemInsts1.push_back(&I);
+      }
+    }
+    // Negative dependence check for each pair of (I0, I1).
+    for (Instruction *I0 : MemInsts0) {
+      for (Instruction *I1 : MemInsts1) {
+        // If both instructions are load statements, then they have no negative dependencies.
+        if (isa<LoadInst>(I0) && isa<LoadInst>(I1))
+          continue;
+        if (auto Dep = DI->depends(I0, I1, true)) {
+          unsigned Direction = Dep->getDirection(1);
+          // If the two instructions have a negative dependency, then the two loops cannot be
+          // merged.
+          if (Direction & Dependence::DVEntry::GT)
+            return false;
         }
-    }
-
-    // CASE: both loops are not guarded
-    // The loops are adjacent if:
-    // - the exit block of the first is the preheader of the second
-    // - the preheader of the second loop only contains the branch
-    else if (!L0->isGuarded() && !L1->isGuarded()){
-      if (L0->getExitBlock() == L1->getLoopPreheader() 
-          && L0->getExitBlock() != nullptr
-          && L1->getLoopPreheader()->size() == 1){
-            adjacent = true;
-      }
-    }   
-
-    // 2) Same number of iterations
-
-
-
-    // 3) Control Flow equivalence
-    
-    // Two loops are CF equivalent if the loops are always executed together, when executed,
-    // and the first executed is the first loop and the second executed is the second loop.
-    // This means that the first loop needs to dominate the second loop, and the second loop
-    // is post-dominated by the first loop.
-
-    // This transaltes in LLVM by checking that the header of the first loop
-    // dominates the header of the second (entering the first loop always brings 
-    // to the second loop), and that the header of the second is post-dominated 
-    // by the header of the first (every time the header of the second is executed,
-    // you always executed the first loop). 
-
-    // If the loops are both guarded but have the same condition...
-
-    bool cf_equivalent = false;
-
-    BasicBlock *Header0 = L0->getHeader();
-    BasicBlock *Header1 = L1->getHeader();
-
-    if (DT.dominates(Header0, Header1) 
-        && PDT.dominates(Header1, Header0))
-        cf_equivalent = true;
-    
-    // Relaxed condition for both loops guarded.
-    // Note that this relaxation assumes that L0 is 
-    // the loop that executes first 
-    if (L0->isGuarded() && L1->isGuarded()){
-      if (L0->getLoopGuardBranch()->getCondition() 
-        == L1->getLoopGuardBranch()->getCondition()){
-          cf_equivalent = true;
       }
     }
-    
-    // 4) 
 
-    errs() << "Adjacency condition: " << adjacent << "\n";
-    errs() << "CF equivalence condition: " << cf_equivalent << "\n";
-    return adjacent && cf_equivalent;
-    */
+    return true;
   }
 
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
