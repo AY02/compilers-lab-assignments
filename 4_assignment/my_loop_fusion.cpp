@@ -100,6 +100,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       return false;
     
     // Condition 2: Trip Count Equivalence
+    // Counting the number of trip counts is like counting the number of times the back edge is
+    // traveled.
     const SCEV *TripCount0 = SE.getBackedgeTakenCount(L0);
     const SCEV *TripCount1 = SE.getBackedgeTakenCount(L1);
     // If at least one of the two algebraic expressions of the trip count could not be calculated,
@@ -133,8 +135,10 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         // If both instructions are load statements, then they have no negative dependencies.
         if (isa<LoadInst>(I0) && isa<LoadInst>(I1))
           continue;
+        // Two loops have SameSD (Space and Depth) if they are in the same nesting depth and have
+        // the same backedge count.
         std::unique_ptr<Dependence> Dep = DI.depends(I0, I1, true);
-        if (!Dep)
+        if (!Dep || Dep->isConfused())
           continue;
         unsigned Direction = Dep->getDirection(1);
         // If the two instructions have a negative dependency, then the two loops cannot be
@@ -149,13 +153,15 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
 
+    errs() << "Starting analysis for " << F.getName() << "...\n";
+
     LoopInfo &LI = FAM.getResult<LoopAnalysis>(F);
     DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
     PostDominatorTree &PDT = FAM.getResult<PostDominatorTreeAnalysis>(F);
     ScalarEvolution &SE = FAM.getResult<ScalarEvolutionAnalysis>(F);
     DependenceInfo &DI = FAM.getResult<DependenceAnalysis>(F);
 
-    SmallVector<Loop *, 8> Loops(LI.getLoopsInPreorder());
+    SmallVector<Loop*, 8> Loops(LI.getLoopsInPreorder());
 
     for (int i = 0; i < Loops.size(); i++) {
       Loop *LA = Loops[i];
@@ -192,7 +198,7 @@ llvm::PassPluginLibraryInfo getMyLoopFusionPassPluginInfo() {
             PB.registerPipelineParsingCallback(
                 [](StringRef Name, FunctionPassManager &FPM,
                    ArrayRef<PassBuilder::PipelineElement>) {
-                  if (Name == "my-loop-fusion") { // flag da terminale
+                  if (Name == "my-loop-fusion") { // Command-line pipeline name
                     FPM.addPass(MyLoopFusionPass());
                     return true;
                   }
