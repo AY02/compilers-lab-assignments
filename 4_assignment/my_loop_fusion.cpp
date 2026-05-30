@@ -18,7 +18,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
   // loops that have more exit blocks, etc.)
   // order of conditions can be modified
 
-  // Assumption: L0 and L1 are siblings.
+  // Assumption: LA and LB are siblings.
   bool checking_conditions(Loop* LA, Loop* LB, DominatorTree &DT, PostDominatorTree &PDT) {
 
     // First pruning: If one loop is guarded while the other is unguarded, then they cannot merge
@@ -58,17 +58,17 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     BranchInst *Guard1 = nullptr;
     // If both loops are guarded, then one guard must dominate the other guard.
     // If both loops are unguarded, then one header must dominate the other header.
-    BasicBlock *EntryA = isAGuarded ? GuardA->getParent() : LoopA->getHeader();
-    BasicBlock *EntryB = isBGuarded ? GuardB->getParent() : LoopB->getHeader();
+    BasicBlock *EntryA = isLAGuarded ? GuardA->getParent() : LA->getHeader();
+    BasicBlock *EntryB = isLBGuarded ? GuardB->getParent() : LB->getHeader();
     // 1. The header of one loop must dominate the header of the other loop.
     if (DT->dominates(EntryA, EntryB) && PDT->dominates(EntryB, EntryA)) {
-      L0 = LoopA;
-      L1 = LoopB;
+      L0 = LA;
+      L1 = LB;
       Guard0 = GuardA;
       Guard1 = GuardB;
     } else if (DT->dominates(EntryB, EntryA) && PDT->dominates(EntryA, EntryB)) {
-      L0 = LoopB;
-      L1 = LoopA;
+      L0 = LB;
+      L1 = LA;
       Guard0 = GuardB;
       Guard1 = GuardA;
     } else {
