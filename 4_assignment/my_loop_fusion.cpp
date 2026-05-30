@@ -79,8 +79,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     }
 
     // Condition 1: Adjacency
-    BasicBlock *ExitBlock0 = L0->getExitBlock();
     // The exit block of the first loop must be the entry block of the second loop.
+    BasicBlock *ExitBlock0 = L0->getExitBlock();
     if (ExitBlock0 != Entry1)
       return false;
     // The pre-header of the second loop must not contain any instructions other
