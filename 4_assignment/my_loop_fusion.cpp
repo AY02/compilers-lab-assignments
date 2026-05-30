@@ -4,9 +4,10 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "llvm/Analysis/LoopInfo.h"
-#include "llvm/IR/CFG.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/Analysis/PostDominators.h"
+#include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/DependenceAnalysis.h"
 
 using namespace llvm;
   
@@ -17,7 +18,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
   // Assumptions:
   // - LA and LB are siblings.
   // - Both loops are in canonical form.
-  bool checking_conditions(Loop* LA, Loop* LB, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo *DI) {
+  bool checking_conditions(Loop *LA, Loop *LB, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI) {
 
     // First pruning: If one loop is guarded while the other is unguarded, then they cannot merge
     // because they do not satisfy condition 3.
@@ -71,10 +72,10 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     BasicBlock *EntryA = isLAGuarded ? GuardA->getParent() : LA->getLoopPreheader();
     BasicBlock *EntryB = isLBGuarded ? GuardB->getParent() : LB->getLoopPreheader();
     // 1. The entry of one loop must dominate the entry of the other loop.
-    if (DT->dominates(EntryA, EntryB) && PDT->dominates(EntryB, EntryA)) {
+    if (DT.dominates(EntryA, EntryB) && PDT.dominates(EntryB, EntryA)) {
       L0 = LA; L1 = LB;
       Entry0 = EntryA; Entry1 = EntryB;
-    } else if (DT->dominates(EntryB, EntryA) && PDT->dominates(EntryA, EntryB)) {
+    } else if (DT.dominates(EntryB, EntryA) && PDT.dominates(EntryA, EntryB)) {
       L0 = LB; L1 = LA;
       Entry0 = EntryB; Entry1 = EntryA;
     } else {
@@ -99,8 +100,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       return false;
     
     // Condition 2: Trip Count Equivalence
-    const SCEV *TripCount0 = SE->getBackedgeTakenCount(L0);
-    const SCEV *TripCount1 = SE->getBackedgeTakenCount(L1);
+    const SCEV *TripCount0 = SE.getBackedgeTakenCount(L0);
+    const SCEV *TripCount1 = SE.getBackedgeTakenCount(L1);
     // If at least one of the two algebraic expressions of the trip count could not be calculated,
     // then the two loops cannot be merged.
     if (isa<SCEVCouldNotCompute>(TripCount0) || isa<SCEVCouldNotCompute>(TripCount1))
@@ -132,13 +133,14 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         // If both instructions are load statements, then they have no negative dependencies.
         if (isa<LoadInst>(I0) && isa<LoadInst>(I1))
           continue;
-        if (auto Dep = DI->depends(I0, I1, true)) {
-          unsigned Direction = Dep->getDirection(1);
-          // If the two instructions have a negative dependency, then the two loops cannot be
-          // merged.
-          if (Direction & Dependence::DVEntry::GT)
-            return false;
-        }
+        std::unique_ptr<Dependence> Dep = DI.depends(I0, I1, true);
+        if (!Dep)
+          continue;
+        unsigned Direction = Dep->getDirection(1);
+        // If the two instructions have a negative dependency, then the two loops cannot be
+        // merged.
+        if (Direction & Dependence::DVEntry::GT)
+          return false;
       }
     }
 
@@ -146,24 +148,34 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
   }
 
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
-    errs() << "\n";
-
-    errs() << "Starting analysis for " << F.getName() << "...\n";
 
     LoopInfo &LI = FAM.getResult<LoopAnalysis>(F);
     DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
     PostDominatorTree &PDT = FAM.getResult<PostDominatorTreeAnalysis>(F);
+    ScalarEvolution &SE = FAM.getResult<ScalarEvolutionAnalysis>(F);
+    DependenceInfo &DI = FAM.getResult<DependenceAnalysis>(F);
 
-    auto it = LI.begin();
-    Loop *L0 = *it;
-    auto next_it = it;
-    next_it++;
-    Loop *L1 = *next_it;
+    SmallVector<Loop *, 8> Loops(LI.getLoopsInPreorder());
 
-    bool value = checking_conditions(L1, L0, DT, PDT);
-    errs() << "\nConditions value for test:" << value <<"\n";
-
-    errs() << "\n";
+    for (int i = 0; i < Loops.size(); i++) {
+      Loop *LA = Loops[i];
+      if (!LA->isLoopSimplifyForm())
+        continue;
+      for (int j = i + 1; j < Loops.size(); j++) {
+        Loop *LB = Loops[j];
+        if (!LB->isLoopSimplifyForm())
+          continue;
+        if (LA->getParentLoop() != LB->getParentLoop())
+          continue;
+        if (checking_conditions(LA, LB, DT, PDT, SE, DI)) {
+          errs() << "Suitable for Loop Fusion: ";
+          LA->getHeader()->printAsOperand(errs(), false);
+          errs() << " and ";
+          LB->getHeader()->printAsOperand(errs(), false);
+          errs() << "\n";
+        }
+      }
+    }
 
     return PreservedAnalyses::all();
   }
