@@ -62,26 +62,26 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     BasicBlock *EntryB = isLBGuarded ? GuardB->getParent() : LB->getHeader();
     // 1. The header of one loop must dominate the header of the other loop.
     if (DT->dominates(EntryA, EntryB) && PDT->dominates(EntryB, EntryA)) {
-      L0 = LA;
-      L1 = LB;
-      Guard0 = GuardA;
-      Guard1 = GuardB;
+      L0 = LA; L1 = LB;
+      Guard0 = GuardA; Guard1 = GuardB;
     } else if (DT->dominates(EntryB, EntryA) && PDT->dominates(EntryA, EntryB)) {
-      L0 = LB;
-      L1 = LA;
-      Guard0 = GuardB;
-      Guard1 = GuardA;
+      L0 = LB; L1 = LA;
+      Guard0 = GuardB; Guard1 = GuardA;
     } else {
       // Condition 3 is not met.
       return false;
     }
 
-    // Third pruning: The first loop must have only one exiting block, otherwise condition 2
-    // risks becoming false.
+    // Third pruning: Both loops must have only one exiting block, otherwise condition 2 risks
+    // becoming false.
+    // Note: The function getExitingBlock returns nullptr if there are multiple exiting blocks.
     BasicBlock *ExitingBlock0 = L0->getExitingBlock();
-    if (!ExitingBlock0) {
+    BasicBlock *ExitingBlock1 = L1->getExitingBlock();
+    if (!ExitingBlock0 || !ExitingBlock1)
       return false;
-    }
+
+    
+    
 
 
     // QUI FINISCONO LE MIE MODIFICHE
