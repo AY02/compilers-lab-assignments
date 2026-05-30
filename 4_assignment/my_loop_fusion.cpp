@@ -40,7 +40,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // The loops are adjacent if:
     // - the guard of the first points to the guard of the second
     // - the guard conditions are the same
-    // - the guard of the second only contains that control statement
+    // - the guard of the second only contains the compare and branch statements
     // - the preheader of the second loop only contains the branch 
     if (L0->isGuarded() && L1->isGuarded()){
       BranchInst *Guard0 = L0->getLoopGuardBranch();
@@ -48,7 +48,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       if ( (Guard0->getSuccessor(0) == Guard1->getParent()     // 1st ...
             || Guard0->getSuccessor(1) == Guard1->getParent()) // ... 1st
           && Guard0->getCondition() == Guard1->getCondition()  // 2nd 
-          && Guard1->getParent()->size() == 1                  // 3rd
+          && Guard1->getParent()->size() == 2                  // 3rd
           && L1->getLoopPreheader()->size() == 1){             // 4th
           adjacent = true;
         }
