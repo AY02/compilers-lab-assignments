@@ -17,8 +17,76 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
   // ale proposes to make prooning before the the function (e.g. removing the 
   // loops that have more exit blocks, etc.)
   // order of conditions can be modified
-  bool checking_conditions(Loop* L0, Loop* L1, DominatorTree &DT, PostDominatorTree &PDT){
 
+  // Assumption: L0 and L1 are siblings.
+  bool checking_conditions(Loop* LA, Loop* LB, DominatorTree &DT, PostDominatorTree &PDT) {
+
+    // First pruning: If one loop is guarded while the other is unguarded, then they cannot merge
+    // because they do not satisfy condition 3.
+    BranchInst *GuardA = LA->getLoopGuardBranch();
+    BranchInst *GuardB = LB->getLoopGuardBranch();
+    bool isLAGuarded = (GuardA != nullptr);
+    bool isLBGuarded = (GuardB != nullptr);
+    if (isLAGuarded != isLBGuarded) {
+      return false;
+    }
+
+    // Second pruning: If both loops are guarded and have a logically different guard condition,
+    // then they cannot merge because they do not satisfy condition 3.
+    if (isLAGuarded && isLBGuarded) {
+      Value *CA = GuardA->getCondition();
+      Value *CB = GuardB->getCondition();
+      // The two loops use different registers for comparison.
+      if (CA != CB) {
+        auto *IA = dyn_cast<Instruction>(CA);
+        auto *IB = dyn_cast<Instruction>(CB);
+        if (IA && IB) {
+          // The definition of the comparison registers uses the same operators and operands.
+          if (!IA->isIdenticalTo(IB))
+            return false;
+        } else {
+          // Either one of them is not an instruction, or they are both different constants.
+          return false;
+        }
+      }
+    }
+
+    // Condition 3: Control Flow Equivalence
+    Loop *L0 = nullptr;
+    Loop *L1 = nullptr;
+    BranchInst *Guard0 = nullptr;
+    BranchInst *Guard1 = nullptr;
+    // If both loops are guarded, then one guard must dominate the other guard.
+    // If both loops are unguarded, then one header must dominate the other header.
+    BasicBlock *EntryA = isAGuarded ? GuardA->getParent() : LoopA->getHeader();
+    BasicBlock *EntryB = isBGuarded ? GuardB->getParent() : LoopB->getHeader();
+    // 1. The header of one loop must dominate the header of the other loop.
+    if (DT->dominates(EntryA, EntryB) && PDT->dominates(EntryB, EntryA)) {
+      L0 = LoopA;
+      L1 = LoopB;
+      Guard0 = GuardA;
+      Guard1 = GuardB;
+    } else if (DT->dominates(EntryB, EntryA) && PDT->dominates(EntryA, EntryB)) {
+      L0 = LoopB;
+      L1 = LoopA;
+      Guard0 = GuardB;
+      Guard1 = GuardA;
+    } else {
+      // Condition 3 is not met.
+      return false;
+    }
+
+    // Third pruning: The first loop must have only one exiting block, otherwise condition 2
+    // risks becoming false.
+    BasicBlock *ExitingBlock0 = L0->getExitingBlock();
+    if (!ExitingBlock0) {
+      return false;
+    }
+
+
+    // QUI FINISCONO LE MIE MODIFICHE
+
+    /*
     // 1) adjacency condition
 
     // Note 1: because of the 3rd condition, it is useless to verify whether the two loops are adjacent 
@@ -29,11 +97,19 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // Note 2: despite Note 1 and what we told about the case where both the loops are guarded, 
     // the loops can still be CF equivalent but only if the guard conditions are the same. 
     // Therefore, in the adjacency analysis we can check that case aswell.
+    // Nota di Alessio: Non e' una cosa banale in quanto siamo in SSA. Anche se i due loop avessero una condizione
+    // di guardia logicamente corretta, in SSA utilizzerebbero registri diversi.
 
     // Note 3: considering that we don't allow instructions to be between the two loops,
     // if there are more exit blocks it is guaranteed that the 3rd condition is not
-    // satisfied, therefore we just analize the case with just one exit block.  
-       
+    // satisfied, therefore we just analize the case with just one exit block.
+    // Nota di Alessio: In realta', il primo loop deve avere un solo exiting block perche' dobbiamo avere la garanzia
+    // che i due loop abbiano lo stesso trip count.
+    // Se il secondo loop non avesse un'uscita anticipata, allora i due loop avrebbero un trip count diverso e quindi
+    // la condizione 2 non verrebbe rispettata.
+    // Quindi, il pruning e' il seguente: il primo loop deve avere un solo exiting block (e quindi un solo exit block).
+    */   
+
     bool adjacent = false;
 
     // CASE: both loops are guarded
@@ -42,12 +118,10 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // - the guard conditions are the same
     // - the guard of the second only contains that control statement
     // - the preheader of the second loop only contains the branch 
-    if (L0->isGuarded() && L1->isGuarded()){
-      BranchInst *Guard0 = L0->getLoopGuardBranch();
-      BranchInst *Guard1 = L1->getLoopGuardBranch();
+    if (isL0Guarded && isL1Guarded){
       if ( (Guard0->getSuccessor(0) == Guard1->getParent()     // 1st ...
             || Guard0->getSuccessor(1) == Guard1->getParent()) // ... 1st
-          && Guard0->getCondition() == Guard1->getCondition()  // 2nd 
+          // && Guard0->getCondition() == Guard1->getCondition()  // 2nd 
           && Guard1->getParent()->size() == 1                  // 3rd
           && L1->getLoopPreheader()->size() == 1){             // 4th
           adjacent = true;
