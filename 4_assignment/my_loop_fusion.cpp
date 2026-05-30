@@ -14,11 +14,9 @@ namespace {
 
 struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
-  // ale proposes to make prooning before the the function (e.g. removing the 
-  // loops that have more exit blocks, etc.)
-  // order of conditions can be modified
-
-  // Assumption: LA and LB are siblings.
+  // Assumptions:
+  // - LA and LB are siblings.
+  // - Both loops are in canonical form.
   bool checking_conditions(Loop* LA, Loop* LB, DominatorTree &DT, PostDominatorTree &PDT) {
 
     // First pruning: If one loop is guarded while the other is unguarded, then they cannot merge
@@ -51,37 +49,51 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       }
     }
 
+    // Third pruning: Both loops must have only one exiting block, otherwise condition 2 risks
+    // becoming false.
+    // Note: The function getExitingBlock returns nullptr if there are multiple exiting blocks.
+    BasicBlock *ExitingBlockA = LA->getExitingBlock();
+    BasicBlock *ExitingBlockB = LB->getExitingBlock();
+    if (!ExitingBlockA || !ExitingBlockB)
+      return false;
+
     // Condition 3: Control Flow Equivalence
     Loop *L0 = nullptr;
     Loop *L1 = nullptr;
-    BranchInst *Guard0 = nullptr;
-    BranchInst *Guard1 = nullptr;
+    BasicBlock *Entry0 = nullptr;
+    BasicBlock *Entry1 = nullptr;
     // If both loops are guarded, then one guard must dominate the other guard.
-    // If both loops are unguarded, then one header must dominate the other header.
-    BasicBlock *EntryA = isLAGuarded ? GuardA->getParent() : LA->getHeader();
-    BasicBlock *EntryB = isLBGuarded ? GuardB->getParent() : LB->getHeader();
-    // 1. The header of one loop must dominate the header of the other loop.
+    // If both loops are unguarded, then one preheader must dominate the other preheader.
+    BasicBlock *EntryA = isLAGuarded ? GuardA->getParent() : LA->getLoopPreheader();
+    BasicBlock *EntryB = isLBGuarded ? GuardB->getParent() : LB->getLoopPreheader();
+    // 1. The entry of one loop must dominate the entry of the other loop.
     if (DT->dominates(EntryA, EntryB) && PDT->dominates(EntryB, EntryA)) {
       L0 = LA; L1 = LB;
-      Guard0 = GuardA; Guard1 = GuardB;
+      Entry0 = EntryA; Entry1 = EntryB;
     } else if (DT->dominates(EntryB, EntryA) && PDT->dominates(EntryA, EntryB)) {
       L0 = LB; L1 = LA;
-      Guard0 = GuardB; Guard1 = GuardA;
+      Entry0 = EntryB; Entry1 = EntryA;
     } else {
       // Condition 3 is not met.
       return false;
     }
 
-    // Third pruning: Both loops must have only one exiting block, otherwise condition 2 risks
-    // becoming false.
-    // Note: The function getExitingBlock returns nullptr if there are multiple exiting blocks.
-    BasicBlock *ExitingBlock0 = L0->getExitingBlock();
-    BasicBlock *ExitingBlock1 = L1->getExitingBlock();
-    if (!ExitingBlock0 || !ExitingBlock1)
+    // Condition 1: Adjacency
+    BasicBlock *ExitBlock0 = L0->getExitBlock();
+    // The exit block of the first loop must be the entry block of the second loop.
+    if (ExitBlock0 != Entry1)
       return false;
-
-    
-    
+    // The pre-header of the second loop must not contain any instructions other
+    // than the unconditional jump to the header.
+    BasicBlock *Preheader1 = L1->getLoopPreheader();
+    // The pre-header of the second loop must have size 1.
+    if (Preheader1 && Preheader1->size() != 1)
+      return false;
+    // The guard of the second loop (if it exists) must have only the comparison instruction
+    // and the conditional branch.
+    BranchInst *Guard1 = L1->getLoopGuardBranch();
+    if (Guard1 && Guard1->getParent()->size() > 2)
+      return false;
 
 
     // QUI FINISCONO LE MIE MODIFICHE
@@ -108,7 +120,6 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // Se il secondo loop non avesse un'uscita anticipata, allora i due loop avrebbero un trip count diverso e quindi
     // la condizione 2 non verrebbe rispettata.
     // Quindi, il pruning e' il seguente: il primo loop deve avere un solo exiting block (e quindi un solo exit block).
-    */   
 
     bool adjacent = false;
 
@@ -140,12 +151,10 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       }
     }   
 
-    /**************/
     // 2) Same number of iterations
 
 
 
-    /**************/
     // 3) Control Flow equivalence
     
     // Two loops are CF equivalent if the loops are always executed together, when executed,
@@ -180,13 +189,12 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       }
     }
     
-
-    /**************/
     // 4) 
 
     errs() << "Adjacency condition: " << adjacent << "\n";
     errs() << "CF equivalence condition: " << cf_equivalent << "\n";
     return adjacent && cf_equivalent;
+    */
   }
 
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
