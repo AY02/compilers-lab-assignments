@@ -13,17 +13,17 @@ define dso_local void @test_perfect_fusion(i32 noundef %0, ptr noundef %1, ptr n
   br i1 %6, label %7, label %16
 
 7:                                                ; preds = %5
-  %8 = sext i32 %.01 to i64
+  %8 = zext nneg i32 %.01 to i64
   %9 = getelementptr inbounds i32, ptr %2, i64 %8
   %10 = load i32, ptr %9, align 4
   %11 = add nsw i32 %10, 1
-  %12 = sext i32 %.01 to i64
+  %12 = zext nneg i32 %.01 to i64
   %13 = getelementptr inbounds i32, ptr %1, i64 %12
   store i32 %11, ptr %13, align 4
   br label %14
 
 14:                                               ; preds = %7
-  %15 = add nsw i32 %.01, 1
+  %15 = add nuw nsw i32 %.01, 1
   br label %5, !llvm.loop !6
 
 16:                                               ; preds = %5
@@ -35,17 +35,17 @@ define dso_local void @test_perfect_fusion(i32 noundef %0, ptr noundef %1, ptr n
   br i1 %18, label %19, label %28
 
 19:                                               ; preds = %17
-  %20 = sext i32 %.0 to i64
+  %20 = zext nneg i32 %.0 to i64
   %21 = getelementptr inbounds i32, ptr %1, i64 %20
   %22 = load i32, ptr %21, align 4
-  %23 = mul nsw i32 %22, 2
-  %24 = sext i32 %.0 to i64
+  %23 = shl nsw i32 %22, 1
+  %24 = zext nneg i32 %.0 to i64
   %25 = getelementptr inbounds i32, ptr %3, i64 %24
   store i32 %23, ptr %25, align 4
   br label %26
 
 26:                                               ; preds = %19
-  %27 = add nsw i32 %.0, 1
+  %27 = add nuw nsw i32 %.0, 1
   br label %17, !llvm.loop !8
 
 28:                                               ; preds = %17
@@ -62,39 +62,38 @@ define dso_local void @test_non_adjacent(i32 noundef %0, ptr noundef %1, ptr nou
   br i1 %5, label %6, label %11
 
 6:                                                ; preds = %4
-  %7 = sext i32 %.01 to i64
+  %7 = zext nneg i32 %.01 to i64
   %8 = getelementptr inbounds i32, ptr %1, i64 %7
   store i32 %.01, ptr %8, align 4
   br label %9
 
 9:                                                ; preds = %6
-  %10 = add nsw i32 %.01, 1
+  %10 = add nuw nsw i32 %.01, 1
   br label %4, !llvm.loop !9
 
 11:                                               ; preds = %4
-  %12 = getelementptr inbounds i32, ptr %2, i64 0
-  store i32 99, ptr %12, align 4
-  br label %13
+  store i32 99, ptr %2, align 4
+  br label %12
 
-13:                                               ; preds = %21, %11
-  %.0 = phi i32 [ 0, %11 ], [ %22, %21 ]
-  %14 = icmp slt i32 %.0, %0
-  br i1 %14, label %15, label %23
+12:                                               ; preds = %20, %11
+  %.0 = phi i32 [ 0, %11 ], [ %21, %20 ]
+  %13 = icmp slt i32 %.0, %0
+  br i1 %13, label %14, label %22
 
-15:                                               ; preds = %13
-  %16 = sext i32 %.0 to i64
-  %17 = getelementptr inbounds i32, ptr %1, i64 %16
-  %18 = load i32, ptr %17, align 4
-  %19 = sext i32 %.0 to i64
-  %20 = getelementptr inbounds i32, ptr %2, i64 %19
-  store i32 %18, ptr %20, align 4
-  br label %21
+14:                                               ; preds = %12
+  %15 = zext nneg i32 %.0 to i64
+  %16 = getelementptr inbounds i32, ptr %1, i64 %15
+  %17 = load i32, ptr %16, align 4
+  %18 = zext nneg i32 %.0 to i64
+  %19 = getelementptr inbounds i32, ptr %2, i64 %18
+  store i32 %17, ptr %19, align 4
+  br label %20
 
-21:                                               ; preds = %15
-  %22 = add nsw i32 %.0, 1
-  br label %13, !llvm.loop !10
+20:                                               ; preds = %14
+  %21 = add nuw nsw i32 %.0, 1
+  br label %12, !llvm.loop !10
 
-23:                                               ; preds = %13
+22:                                               ; preds = %12
   ret void
 }
 
@@ -108,14 +107,14 @@ define dso_local void @test_not_cf_equivalent(i32 noundef %0, i32 noundef %1, pt
   br i1 %5, label %6, label %12
 
 6:                                                ; preds = %4
-  %7 = mul nsw i32 %.01, 2
-  %8 = sext i32 %.01 to i64
+  %7 = shl nuw nsw i32 %.01, 1
+  %8 = zext nneg i32 %.01 to i64
   %9 = getelementptr inbounds i32, ptr %2, i64 %8
   store i32 %7, ptr %9, align 4
   br label %10
 
 10:                                               ; preds = %6
-  %11 = add nsw i32 %.01, 1
+  %11 = add nuw nsw i32 %.01, 1
   br label %4, !llvm.loop !11
 
 12:                                               ; preds = %4
@@ -131,17 +130,17 @@ define dso_local void @test_not_cf_equivalent(i32 noundef %0, i32 noundef %1, pt
   br i1 %16, label %17, label %26
 
 17:                                               ; preds = %15
-  %18 = sext i32 %.0 to i64
+  %18 = zext nneg i32 %.0 to i64
   %19 = getelementptr inbounds i32, ptr %2, i64 %18
   %20 = load i32, ptr %19, align 4
   %21 = add nsw i32 %20, 1
-  %22 = sext i32 %.0 to i64
+  %22 = zext nneg i32 %.0 to i64
   %23 = getelementptr inbounds i32, ptr %2, i64 %22
   store i32 %21, ptr %23, align 4
   br label %24
 
 24:                                               ; preds = %17
-  %25 = add nsw i32 %.0, 1
+  %25 = add nuw nsw i32 %.0, 1
   br label %15, !llvm.loop !12
 
 26:                                               ; preds = %15
@@ -161,13 +160,13 @@ define dso_local void @test_different_guards(i32 noundef %0, i32 noundef %1, ptr
   br i1 %6, label %7, label %12
 
 7:                                                ; preds = %5
-  %8 = sext i32 %.01 to i64
+  %8 = zext nneg i32 %.01 to i64
   %9 = getelementptr inbounds i32, ptr %2, i64 %8
   store i32 %.01, ptr %9, align 4
   br label %10
 
 10:                                               ; preds = %7
-  %11 = add nsw i32 %.01, 1
+  %11 = add nuw nsw i32 %.01, 1
   br label %5, !llvm.loop !13
 
 12:                                               ; preds = %5
@@ -179,13 +178,13 @@ define dso_local void @test_different_guards(i32 noundef %0, i32 noundef %1, ptr
   br i1 %14, label %15, label %20
 
 15:                                               ; preds = %13
-  %16 = sext i32 %.0 to i64
+  %16 = zext nneg i32 %.0 to i64
   %17 = getelementptr inbounds i32, ptr %3, i64 %16
   store i32 %.0, ptr %17, align 4
   br label %18
 
 18:                                               ; preds = %15
-  %19 = add nsw i32 %.0, 1
+  %19 = add nuw nsw i32 %.0, 1
   br label %13, !llvm.loop !14
 
 20:                                               ; preds = %13
@@ -200,41 +199,41 @@ define dso_local void @test_mixed_guards(i32 noundef %0, ptr noundef %1) #0 {
 4:                                                ; preds = %2
   br label %5
 
-5:                                                ; preds = %9, %4
-  %.01 = phi i32 [ 0, %4 ], [ %8, %9 ]
-  %6 = sext i32 %.01 to i64
+5:                                                ; preds = %8, %4
+  %.01 = phi i32 [ 0, %4 ], [ %9, %8 ]
+  %6 = zext nneg i32 %.01 to i64
   %7 = getelementptr inbounds i32, ptr %1, i64 %6
   store i32 %.01, ptr %7, align 4
-  %8 = add nsw i32 %.01, 1
-  br label %9
+  br label %8
 
-9:                                                ; preds = %5
-  %10 = icmp slt i32 %8, %0
+8:                                                ; preds = %5
+  %9 = add nuw nsw i32 %.01, 1
+  %10 = icmp slt i32 %9, %0
   br i1 %10, label %5, label %11, !llvm.loop !15
 
-11:                                               ; preds = %9
+11:                                               ; preds = %8
   br label %12
 
 12:                                               ; preds = %11, %2
   br label %13
 
-13:                                               ; preds = %21, %12
-  %.0 = phi i32 [ 0, %12 ], [ %20, %21 ]
-  %14 = sext i32 %.0 to i64
+13:                                               ; preds = %20, %12
+  %.0 = phi i32 [ 0, %12 ], [ %21, %20 ]
+  %14 = zext nneg i32 %.0 to i64
   %15 = getelementptr inbounds i32, ptr %1, i64 %14
   %16 = load i32, ptr %15, align 4
   %17 = add nsw i32 %16, 1
-  %18 = sext i32 %.0 to i64
+  %18 = zext nneg i32 %.0 to i64
   %19 = getelementptr inbounds i32, ptr %1, i64 %18
   store i32 %17, ptr %19, align 4
-  %20 = add nsw i32 %.0, 1
-  br label %21
+  br label %20
 
-21:                                               ; preds = %13
-  %22 = icmp slt i32 %20, 10
+20:                                               ; preds = %13
+  %21 = add nuw nsw i32 %.0, 1
+  %22 = icmp ult i32 %.0, 9
   br i1 %22, label %13, label %23, !llvm.loop !16
 
-23:                                               ; preds = %21
+23:                                               ; preds = %20
   ret void
 }
 
@@ -246,20 +245,20 @@ define dso_local void @test_both_guarded_pass(i32 noundef %0, ptr noundef %1, pt
 5:                                                ; preds = %3
   br label %6
 
-6:                                                ; preds = %11, %5
-  %.01 = phi i32 [ 0, %5 ], [ %10, %11 ]
-  %7 = mul nsw i32 %.01, 2
-  %8 = sext i32 %.01 to i64
+6:                                                ; preds = %10, %5
+  %.01 = phi i32 [ 0, %5 ], [ %11, %10 ]
+  %7 = shl nuw nsw i32 %.01, 1
+  %8 = zext nneg i32 %.01 to i64
   %9 = getelementptr inbounds i32, ptr %1, i64 %8
   store i32 %7, ptr %9, align 4
-  %10 = add nsw i32 %.01, 1
-  br label %11
+  br label %10
 
-11:                                               ; preds = %6
-  %12 = icmp slt i32 %10, %0
+10:                                               ; preds = %6
+  %11 = add nuw nsw i32 %.01, 1
+  %12 = icmp slt i32 %11, %0
   br i1 %12, label %6, label %13, !llvm.loop !17
 
-13:                                               ; preds = %11
+13:                                               ; preds = %10
   br label %14
 
 14:                                               ; preds = %13, %3
@@ -269,20 +268,20 @@ define dso_local void @test_both_guarded_pass(i32 noundef %0, ptr noundef %1, pt
 16:                                               ; preds = %14
   br label %17
 
-17:                                               ; preds = %22, %16
-  %.0 = phi i32 [ 0, %16 ], [ %21, %22 ]
-  %18 = mul nsw i32 %.0, 2
-  %19 = sext i32 %.0 to i64
+17:                                               ; preds = %21, %16
+  %.0 = phi i32 [ 0, %16 ], [ %22, %21 ]
+  %18 = shl nuw nsw i32 %.0, 1
+  %19 = zext nneg i32 %.0 to i64
   %20 = getelementptr inbounds i32, ptr %2, i64 %19
   store i32 %18, ptr %20, align 4
-  %21 = add nsw i32 %.0, 1
-  br label %22
+  br label %21
 
-22:                                               ; preds = %17
-  %23 = icmp slt i32 %21, %0
+21:                                               ; preds = %17
+  %22 = add nuw nsw i32 %.0, 1
+  %23 = icmp slt i32 %22, %0
   br i1 %23, label %17, label %24, !llvm.loop !18
 
-24:                                               ; preds = %22
+24:                                               ; preds = %21
   br label %25
 
 25:                                               ; preds = %24, %14
@@ -297,48 +296,47 @@ define dso_local void @test_both_guarded_fail_adj(i32 noundef %0, ptr noundef %1
 5:                                                ; preds = %3
   br label %6
 
-6:                                                ; preds = %11, %5
-  %.01 = phi i32 [ 0, %5 ], [ %10, %11 ]
-  %7 = mul nsw i32 %.01, 2
-  %8 = sext i32 %.01 to i64
+6:                                                ; preds = %10, %5
+  %.01 = phi i32 [ 0, %5 ], [ %11, %10 ]
+  %7 = shl nuw nsw i32 %.01, 1
+  %8 = zext nneg i32 %.01 to i64
   %9 = getelementptr inbounds i32, ptr %1, i64 %8
   store i32 %7, ptr %9, align 4
-  %10 = add nsw i32 %.01, 1
-  br label %11
+  br label %10
 
-11:                                               ; preds = %6
-  %12 = icmp slt i32 %10, %0
+10:                                               ; preds = %6
+  %11 = add nuw nsw i32 %.01, 1
+  %12 = icmp slt i32 %11, %0
   br i1 %12, label %6, label %13, !llvm.loop !19
 
-13:                                               ; preds = %11
+13:                                               ; preds = %10
   br label %14
 
 14:                                               ; preds = %13, %3
-  %15 = getelementptr inbounds i32, ptr %1, i64 0
-  store i32 999, ptr %15, align 4
-  %16 = icmp sgt i32 %0, 0
-  br i1 %16, label %17, label %26
+  store i32 999, ptr %1, align 4
+  %15 = icmp sgt i32 %0, 0
+  br i1 %15, label %16, label %25
 
-17:                                               ; preds = %14
-  br label %18
+16:                                               ; preds = %14
+  br label %17
 
-18:                                               ; preds = %23, %17
-  %.0 = phi i32 [ 0, %17 ], [ %22, %23 ]
-  %19 = mul nsw i32 %.0, 2
-  %20 = sext i32 %.0 to i64
-  %21 = getelementptr inbounds i32, ptr %2, i64 %20
-  store i32 %19, ptr %21, align 4
-  %22 = add nsw i32 %.0, 1
-  br label %23
+17:                                               ; preds = %21, %16
+  %.0 = phi i32 [ 0, %16 ], [ %22, %21 ]
+  %18 = shl nuw nsw i32 %.0, 1
+  %19 = zext nneg i32 %.0 to i64
+  %20 = getelementptr inbounds i32, ptr %2, i64 %19
+  store i32 %18, ptr %20, align 4
+  br label %21
 
-23:                                               ; preds = %18
-  %24 = icmp slt i32 %22, %0
-  br i1 %24, label %18, label %25, !llvm.loop !20
+21:                                               ; preds = %17
+  %22 = add nuw nsw i32 %.0, 1
+  %23 = icmp slt i32 %22, %0
+  br i1 %23, label %17, label %24, !llvm.loop !20
 
-25:                                               ; preds = %23
-  br label %26
+24:                                               ; preds = %21
+  br label %25
 
-26:                                               ; preds = %25, %14
+25:                                               ; preds = %24, %14
   ret void
 }
 
@@ -350,20 +348,20 @@ define dso_local void @test_both_guarded_fail_cfe(i32 noundef %0, i32 noundef %1
 6:                                                ; preds = %4
   br label %7
 
-7:                                                ; preds = %12, %6
-  %.01 = phi i32 [ 0, %6 ], [ %11, %12 ]
-  %8 = mul nsw i32 %.01, 2
-  %9 = sext i32 %.01 to i64
+7:                                                ; preds = %11, %6
+  %.01 = phi i32 [ 0, %6 ], [ %12, %11 ]
+  %8 = shl nuw nsw i32 %.01, 1
+  %9 = zext nneg i32 %.01 to i64
   %10 = getelementptr inbounds i32, ptr %2, i64 %9
   store i32 %8, ptr %10, align 4
-  %11 = add nsw i32 %.01, 1
-  br label %12
+  br label %11
 
-12:                                               ; preds = %7
-  %13 = icmp slt i32 %11, %0
+11:                                               ; preds = %7
+  %12 = add nuw nsw i32 %.01, 1
+  %13 = icmp slt i32 %12, %0
   br i1 %13, label %7, label %14, !llvm.loop !21
 
-14:                                               ; preds = %12
+14:                                               ; preds = %11
   br label %15
 
 15:                                               ; preds = %14, %4
@@ -377,20 +375,20 @@ define dso_local void @test_both_guarded_fail_cfe(i32 noundef %0, i32 noundef %1
 19:                                               ; preds = %17
   br label %20
 
-20:                                               ; preds = %25, %19
-  %.0 = phi i32 [ 0, %19 ], [ %24, %25 ]
-  %21 = mul nsw i32 %.0, 2
-  %22 = sext i32 %.0 to i64
+20:                                               ; preds = %24, %19
+  %.0 = phi i32 [ 0, %19 ], [ %25, %24 ]
+  %21 = shl nuw nsw i32 %.0, 1
+  %22 = zext nneg i32 %.0 to i64
   %23 = getelementptr inbounds i32, ptr %3, i64 %22
   store i32 %21, ptr %23, align 4
-  %24 = add nsw i32 %.0, 1
-  br label %25
+  br label %24
 
-25:                                               ; preds = %20
-  %26 = icmp slt i32 %24, %0
+24:                                               ; preds = %20
+  %25 = add nuw nsw i32 %.0, 1
+  %26 = icmp slt i32 %25, %0
   br i1 %26, label %20, label %27, !llvm.loop !22
 
-27:                                               ; preds = %25
+27:                                               ; preds = %24
   br label %28
 
 28:                                               ; preds = %27, %17
