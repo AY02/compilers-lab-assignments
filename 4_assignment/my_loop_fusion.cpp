@@ -7,6 +7,7 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/Analysis/PostDominators.h"
 #include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/DependenceAnalysis.h"
 
 using namespace llvm;
@@ -15,10 +16,19 @@ namespace {
 
 struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
+  // Extract the memory pointer from a Load or Store instruction.
+  Value *getMemPtr(Instruction *I) {
+    if (LoadInst *LI = dyn_cast<LoadInst>(I))
+      return LI->getPointerOperand();
+    if (StoreInst *SI = dyn_cast<StoreInst>(I))
+      return SI->getPointerOperand();
+    return nullptr;
+  }
+
   // Assumptions:
   // - LA and LB are siblings.
   // - Both loops are in canonical form.
-  bool checking_conditions(Loop *LA, Loop *LB, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI) {
+  bool areLoopsFuseable(Loop *LA, Loop *LB, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI) {
 
     // First pruning: If one loop is guarded while the other is unguarded, then they cannot merge
     // because they do not satisfy condition 3.
@@ -40,8 +50,11 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         Instruction *IB = dyn_cast<Instruction>(CB);
         if (IA && IB) {
           // The definition of the comparison registers uses the same operators and operands.
-          if (!IA->isIdenticalTo(IB))
+          if (!IA->isIdenticalTo(IB)) {
+            errs() << "The two loops have different guards.\n";
             return false;
+          }
+          errs() << "The two loops have the same guard.\n";
         } else {
           // Either one of them is not an instruction, or they are both different constants.
           return false;
@@ -54,8 +67,10 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // Note: The function getExitingBlock returns nullptr if there are multiple exiting blocks.
     BasicBlock *ExitingBlockA = LA->getExitingBlock();
     BasicBlock *ExitingBlockB = LB->getExitingBlock();
-    if (!ExitingBlockA || !ExitingBlockB)
+    if (!ExitingBlockA || !ExitingBlockB) {
+      errs() << "There are multiple exit points.\n";
       return false;
+    }
     
     // Fourth pruning: Both loops have no internal nesting. Otherwise, the implementation of
     // condition 4 becomes significantly more complicated.
@@ -86,13 +101,26 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // Condition 1: Adjacency
     // The exit block of the first loop must be the entry block of the second loop.
     BasicBlock *ExitBlock0 = L0->getExitBlock();
-    if (ExitBlock0 != Entry1)
-      return false;
+    if (ExitBlock0 != Entry1) {
+      errs() << "The exit of the first loop does not match the entry of the second loop.\n";
+      // In guarded do-while loops, the dedicated exit block is a block that sits between the
+      // exiting block of the first loop and the guard block of the second loop. Consequently,
+      // the exit block of the first loop will never be the entry block of the second loop.
+      // For this reason, we need to verify that the successor of the dedicated exit block of
+      // the first loop coincides with the entry block of the second loop.
+      Instruction *Term = ExitBlock0->getTerminator();
+      if (!Term || Term->getSuccessor(0) != Entry1) {
+        errs() << "The dedicated exit of the first loop does not match the entry of the second loop.\n";
+        return false;
+      }
+    }
     // The pre-header of the second loop must not contain any instructions other
     // than the unconditional jump to the header.
     BasicBlock *Preheader1 = L1->getLoopPreheader();
-    if (Preheader1 && Preheader1->size() != 1)
+    if (Preheader1 && Preheader1->size() != 1) {
+      errs() << "The second preheader has other instructions besides the unconditional branch.\n";
       return false;
+    }
     // The guard of the second loop (if it exists) must have only the comparison instruction
     // and the conditional branch.
     BranchInst *Guard1 = L1->getLoopGuardBranch();
@@ -106,11 +134,15 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     const SCEV *TripCount1 = SE.getBackedgeTakenCount(L1);
     // If at least one of the two algebraic expressions of the trip count could not be calculated,
     // then the two loops cannot be merged.
-    if (isa<SCEVCouldNotCompute>(TripCount0) || isa<SCEVCouldNotCompute>(TripCount1))
+    if (isa<SCEVCouldNotCompute>(TripCount0) || isa<SCEVCouldNotCompute>(TripCount1)) {
+      errs() << "Different step.\n";
       return false;
+    }
     // If the algebraic expressions of the trip counts are different, then they cannot be merged.
-    if (TripCount0 != TripCount1)
+    if (TripCount0 != TripCount1) {
+      errs() << "Different trip count.\n";
       return false;
+    }
 
     // Condition 4: Absence of Negative Dependencies
     // First loop memory access instructions.
@@ -133,18 +165,50 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     for (Instruction *I0 : MemInsts0) {
       for (Instruction *I1 : MemInsts1) {
         // If both instructions are load statements, then they have no negative dependencies.
-        if (isa<LoadInst>(I0) && isa<LoadInst>(I1))
+        if (isa<LoadInst>(I0) && isa<LoadInst>(I1)) {
+          errs() << "Both instructions are load statements.\n";
           continue;
-        // Two loops have SameSD (Space and Depth) if they are in the same nesting depth and have
-        // the same backedge count.
+        }
+        // Dep acts as a strict dependency checker.
         std::unique_ptr<Dependence> Dep = DI.depends(I0, I1, true);
-        if (!Dep || Dep->isConfused())
+        // There are no dependencies between the two instructions.
+        if (!Dep)
           continue;
-        unsigned Direction = Dep->getDirection(1);
-        // If the two instructions have a negative dependency, then the two loops cannot be
-        // merged.
-        if (Direction & Dependence::DVEntry::GT)
+        // The compiler doesn't understand the dependency and assumes the worst case.
+        if (Dep->isConfused())
           return false;
+        // Hybrid Approach: Calculate negative distance using SCEV to bypass the lack of 'SameSD'
+        // support in LLVM 19.
+        Value *Ptr0 = getMemPtr(I0);
+        Value *Ptr1 = getMemPtr(I1);
+        if (!Ptr0 || !Ptr1)
+          return false;
+        const SCEV *S0 = SE.getSCEV(Ptr0);
+        const SCEV *S1 = SE.getSCEV(Ptr1);
+        // Polynomial expressions expressions of array indices (example: A[f(i)]).
+        const SCEVAddRecExpr *AR0 = dyn_cast<SCEVAddRecExpr>(S0);
+        const SCEVAddRecExpr *AR1 = dyn_cast<SCEVAddRecExpr>(S1);
+        if (!AR0 || !AR1) {
+          errs() << "Access with non-affine indexes.\n";
+          return false;
+        }
+        // The indices must grow identically (example: A[i+1] and A[2 * i] cannot be merged).
+        if (AR0->getStepRecurrence(SE) != AR1->getStepRecurrence(SE)) {
+          errs() << "Different steps.\n";
+          return false;
+        }
+        // Calculate distance based on starting points: d = Start0 (&A) - Start1 (&A + offset).
+        const SCEV *Dist = SE.getMinusSCEV(AR0->getStart(), AR1->getStart());
+        if (const SCEVConstant *ConstDist = dyn_cast<SCEVConstant>(Dist)) {
+          int d = ConstDist->getAPInt().getSExtValue();
+          // A negative distance implies a backward dependency (GT direction)
+          errs() << "Distance: " << d << ".\n";
+          if (d < 0)
+            return false;
+        } else {
+          // Distance cannot be computed as a compile-time constant.
+          return false;
+        }
       }
     }
 
@@ -173,7 +237,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           continue;
         if (LA->getParentLoop() != LB->getParentLoop())
           continue;
-        if (checking_conditions(LA, LB, DT, PDT, SE, DI)) {
+        if (areLoopsFuseable(LA, LB, DT, PDT, SE, DI)) {
           errs() << "Suitable for Loop Fusion: ";
           LA->getHeader()->printAsOperand(errs(), false);
           errs() << " and ";
@@ -182,6 +246,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         }
       }
     }
+
+    errs() << "Ending analysis for " << F.getName() << "...\n\n";
 
     return PreservedAnalyses::all();
   }
