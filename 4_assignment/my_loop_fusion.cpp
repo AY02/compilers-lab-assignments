@@ -135,7 +135,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // If at least one of the two algebraic expressions of the trip count could not be calculated,
     // then the two loops cannot be merged.
     if (isa<SCEVCouldNotCompute>(TripCount0) || isa<SCEVCouldNotCompute>(TripCount1)) {
-      errs() << "Different step.\n";
+      errs() << "Algebraic expression of the trip count cannot be calculated.\n";
       return false;
     }
     // If the algebraic expressions of the trip counts are different, then they cannot be merged.
