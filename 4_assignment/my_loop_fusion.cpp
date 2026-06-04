@@ -140,7 +140,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     SmallVector<Instruction*, 16> MemInsts0;
     for (BasicBlock *BB : L0->blocks()) {
       for (Instruction &I : *BB) {
-        if (isa<StoreInst>(&I))
+        if (isa<LoadInst>(I) || isa<StoreInst>(I))
           MemInsts0.push_back(&I);
       }
     }
@@ -148,13 +148,16 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     SmallVector<Instruction*, 16> MemInsts1;
     for (BasicBlock *BB : L1->blocks()) {
       for (Instruction &I : *BB) {
-        if (isa<LoadInst>(&I))
+        if (isa<LoadInst>(I) || isa<StoreInst>(I))
           MemInsts1.push_back(&I);
       }
     }
     // Negative dependence check for each pair of (I0, I1).
     for (Instruction *I0 : MemInsts0) {
       for (Instruction *I1 : MemInsts1) {
+        // If both instructions are load statements, then they have no dependencies.
+        if (isa<LoadInst>(I0) && isa<LoadInst>(I1))
+          continue;
         // Dep acts as a strict dependency checker.
         std::unique_ptr<Dependence> Dep = DI.depends(I0, I1, true);
         // There are no dependencies between the two instructions.
@@ -184,7 +187,9 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         // Calculate distance based on starting points: d = Start0 (&A) - Start1 (&A + offset).
         const SCEV *Dist = SE.getMinusSCEV(AR0->getStart(), AR1->getStart());
         errs() << "Distance: " << *Dist << ".\n";
-        if (SE.isKnownNegative(Dist) || !SE.isKnownNonNegative(Dist))
+        // If the distance is not non-negative, or cannot be determined at compile time, then the
+        // two loops cannot be merged.
+        if (!SE.isKnownNonNegative(Dist))
           return false;
       }
     }

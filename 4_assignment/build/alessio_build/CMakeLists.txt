@@ -33,7 +33,7 @@ endif()
 #===============================================================================
 # 3. ADD THE TARGET
 #===============================================================================
-add_library(MyLoopFusionPass SHARED ../my_loop_fusion.cpp)
+add_library(MyLoopFusionPass SHARED ../../my_loop_fusion.cpp)
 
 # Allow undefined symbols in shared objects on Darwin (this is the default
 # behaviour on Linux)
