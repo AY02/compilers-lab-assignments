@@ -16,15 +16,6 @@ namespace {
 
 struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
-  // Extract the memory pointer from a Load or Store instruction.
-  Value *getMemPtr(Instruction *I) {
-    if (LoadInst *LI = dyn_cast<LoadInst>(I))
-      return LI->getPointerOperand();
-    if (StoreInst *SI = dyn_cast<StoreInst>(I))
-      return SI->getPointerOperand();
-    return nullptr;
-  }
-
   // Assumptions:
   // - LA and LB are siblings.
   // - Both loops are in canonical form.
@@ -135,7 +126,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // If at least one of the two algebraic expressions of the trip count could not be calculated,
     // then the two loops cannot be merged.
     if (isa<SCEVCouldNotCompute>(TripCount0) || isa<SCEVCouldNotCompute>(TripCount1)) {
-      errs() << "Algebraic expression of the trip count cannot be calculated.\n";
+      errs() << "Different step.\n";
       return false;
     }
     // If the algebraic expressions of the trip counts are different, then they cannot be merged.
@@ -179,8 +170,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           return false;
         // Hybrid Approach: Calculate negative distance using SCEV to bypass the lack of 'SameSD'
         // support in LLVM 19.
-        Value *Ptr0 = getMemPtr(I0);
-        Value *Ptr1 = getMemPtr(I1);
+        Value *Ptr0 = getLoadStorePointerOperand(I0);
+        Value *Ptr1 = getLoadStorePointerOperand(I1);
         if (!Ptr0 || !Ptr1)
           return false;
         const SCEV *S0 = SE.getSCEV(Ptr0);
@@ -199,16 +190,9 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         }
         // Calculate distance based on starting points: d = Start0 (&A) - Start1 (&A + offset).
         const SCEV *Dist = SE.getMinusSCEV(AR0->getStart(), AR1->getStart());
-        if (const SCEVConstant *ConstDist = dyn_cast<SCEVConstant>(Dist)) {
-          int d = ConstDist->getAPInt().getSExtValue();
-          // A negative distance implies a backward dependency (GT direction)
-          errs() << "Distance: " << d << ".\n";
-          if (d < 0)
-            return false;
-        } else {
-          // Distance cannot be computed as a compile-time constant.
+        errs() << "Distance: " << *Dist << ".\n";
+        if (SE.isKnownNegative(Dist) || !SE.isKnownNonNegative(Dist))
           return false;
-        }
       }
     }
 
