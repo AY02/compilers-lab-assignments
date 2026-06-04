@@ -140,7 +140,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     SmallVector<Instruction*, 16> MemInsts0;
     for (BasicBlock *BB : L0->blocks()) {
       for (Instruction &I : *BB) {
-        if (I.mayReadOrWriteMemory())
+        if (isa<StoreInst>(&I))
           MemInsts0.push_back(&I);
       }
     }
@@ -148,18 +148,13 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     SmallVector<Instruction*, 16> MemInsts1;
     for (BasicBlock *BB : L1->blocks()) {
       for (Instruction &I : *BB) {
-        if (I.mayReadOrWriteMemory())
+        if (isa<LoadInst>(&I))
           MemInsts1.push_back(&I);
       }
     }
     // Negative dependence check for each pair of (I0, I1).
     for (Instruction *I0 : MemInsts0) {
       for (Instruction *I1 : MemInsts1) {
-        // If both instructions are load statements, then they have no negative dependencies.
-        if (isa<LoadInst>(I0) && isa<LoadInst>(I1)) {
-          errs() << "Both instructions are load statements.\n";
-          continue;
-        }
         // Dep acts as a strict dependency checker.
         std::unique_ptr<Dependence> Dep = DI.depends(I0, I1, true);
         // There are no dependencies between the two instructions.
@@ -172,8 +167,6 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         // support in LLVM 19.
         Value *Ptr0 = getLoadStorePointerOperand(I0);
         Value *Ptr1 = getLoadStorePointerOperand(I1);
-        if (!Ptr0 || !Ptr1)
-          return false;
         const SCEV *S0 = SE.getSCEV(Ptr0);
         const SCEV *S1 = SE.getSCEV(Ptr1);
         // Polynomial expressions expressions of array indices (example: A[f(i)]).
