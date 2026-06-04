@@ -175,14 +175,15 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         if (!Ptr0 || !Ptr1)
           return false;
         const SCEV *S0 = SE.getSCEV(Ptr0);
-        const SCEV *S1 = SE.getSCEV(Ptr1);
+        const SCEV *S1 = SE.getSCEV(Ptr1); // questo mi ritorna la f(i)
         // Polynomial expressions expressions of array indices (example: A[f(i)]).
-        const SCEVAddRecExpr *AR0 = dyn_cast<SCEVAddRecExpr>(S0);
-        const SCEVAddRecExpr *AR1 = dyn_cast<SCEVAddRecExpr>(S1);
+        const SCEVAddRecExpr *AR0 = dyn_cast<SCEVAddRecExpr>(S0); // questo mi serve per castarlo alle espressioni affini
+        const SCEVAddRecExpr *AR1 = dyn_cast<SCEVAddRecExpr>(S1); // esempio di non affine: a[p[i]]
         if (!AR0 || !AR1) {
           errs() << "Access with non-affine indexes.\n";
           return false;
         }
+
         // The indices must grow identically (example: A[i+1] and A[2 * i] cannot be merged).
         if (AR0->getStepRecurrence(SE) != AR1->getStepRecurrence(SE)) {
           errs() << "Different steps.\n";
@@ -197,6 +198,20 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     }
 
     return true;
+  }
+
+    void loopFusion(Loop *L0, Loop *L1){
+    // Find induction variable of the loop 
+    PHINode *IV0 = L0->getInductionVariable();
+    PHINode *IV1 = L1->getInductionVariable();
+
+    if (!IV0 || !IV1) {
+      errs() << "Error: impossible to find induction variables.\n";
+      return false; 
+    }
+
+    // Change the uses of the induction variable of the second loop
+    IV1->replaceAllUsesWith(IV0); // IMPLEMENT IT FROM SCRATCH
   }
 
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
