@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build
+CMAKE_SOURCE_DIR = /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build
+CMAKE_BINARY_DIR = /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build
 
 # Utility rule file for AArch64TargetParserTableGen.
 
@@ -81,6 +81,6 @@ CMakeFiles/AArch64TargetParserTableGen.dir/clean:
 .PHONY : CMakeFiles/AArch64TargetParserTableGen.dir/clean
 
 CMakeFiles/AArch64TargetParserTableGen.dir/depend:
-	cd /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/CMakeFiles/AArch64TargetParserTableGen.dir/DependInfo.cmake "--color=$(COLOR)"
+	cd /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build /home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build/CMakeFiles/AArch64TargetParserTableGen.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : CMakeFiles/AArch64TargetParserTableGen.dir/depend
 
