@@ -198,10 +198,10 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     return true;
   }
 
-    void loopFusion(Loop *L0, Loop *L1){
+  bool loopFusion(Loop *L0, Loop *L1, ScalarEvolution &SE){
     // Find induction variable of the loop 
-    PHINode *IV0 = L0->getInductionVariable();
-    PHINode *IV1 = L1->getInductionVariable();
+    PHINode *IV0 = L0->getInductionVariable(SE);
+    PHINode *IV1 = L1->getInductionVariable(SE);
 
     if (!IV0 || !IV1) {
       errs() << "Error: impossible to find induction variables.\n";
@@ -210,6 +210,57 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
     // Change the uses of the induction variable of the second loop
     IV1->replaceAllUsesWith(IV0); // IMPLEMENT IT FROM SCRATCH
+
+    // Moving the body of the second loop right after the body of the first loop,
+    // and changing the exit of the first loop with the exit of the second loop.
+    // Since we are assuming the absence of internal if-else statements or early exits within the loop body, 
+    // this implies that the body of the loop is composed of exactly one BB. 
+    // Therefore, we can move the instruction from the body of the second right 
+    // into the body of the first, without implementing additional control logic.
+    // We first obtain the relevant blocks:
+    BasicBlock *Latch0 = L0->getLoopLatch();
+    BasicBlock *Latch1 = L1->getLoopLatch();
+
+    if (!Latch0 || !Latch1) {
+        errs() << "Error: loops do not have a single latch.\n";
+        return false;
+    }
+
+    BasicBlock *Body0 = Latch0->getSinglePredecessor();
+    BasicBlock *Body1 = Latch1->getSinglePredecessor();
+
+    if (!Body0 || !Body1) {
+        errs() << "Error: multiple latch predecessors (internal control flow detected).\n";
+        return false; 
+    }
+
+    // Getting the insert point:
+    Instruction *InsertPt = Body0->getTerminator();
+
+    // Instructions motion
+    for (auto iter = Body1->begin(); iter != Body1->end(); ) {
+      Instruction &Inst = *iter++;
+      if (Inst.isTerminator()) break; 
+      Inst.moveBefore(InsertPt); // otherwise, code motion
+    }
+
+    // Changing the exit block of the first loop with the exit block of the second loop
+    BasicBlock *Exiting0 = L0->getExitingBlock();
+    BasicBlock *Exit0 = L0->getExitBlock();
+    BasicBlock *Exit1 = L1->getExitBlock();
+
+    // If the terminator instruction of the exiting block of L0 is a
+    // branch instruction, we cycle on its successor until we find the 
+    // one that jumps on exit0, and we change it to force the jump on exit1
+    if (BranchInst *BI = dyn_cast<BranchInst>(Exiting0->getTerminator())){
+      for (unsigned i = 0; i < BI->getNumSuccessors(); ++i){
+        if (BI->getSuccessor(i) == Exit0)
+            BI->setSuccessor(i, Exit1);
+      }
+    }
+    else return false;
+
+    return true;
   }
 
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
