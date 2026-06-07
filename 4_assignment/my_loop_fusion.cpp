@@ -198,10 +198,37 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     return true;
   }
 
+  // Get induction variable function:
+  PHINode *getInductionVariableModified(Loop *L, ScalarEvolution &SE) {
+    // Find induction variable of the loop with the API from LLVM
+    PHINode *IV = L->getInductionVariable(SE);
+
+    if (!IV) {
+      errs() << "Error: impossible to find induction variable with the API, trying to find in other ways.\n";
+      BasicBlock *Header = L->getHeader();
+      for (PHINode &Phi : Header->phis()) {
+        if (!SE.isSCEVable(Phi.getType())) continue;
+        const SCEV *S = SE.getSCEV(&Phi);
+        // Note: non-conservative choice. If the phi evolves as an affine expression
+        // in this loop, it is not guaranteed that it is the IV. But to avoid complex 
+        // control logic, and still allow expressive testings, we decided to apply this heuristic.
+        if (const SCEVAddRecExpr *AR = dyn_cast<SCEVAddRecExpr>(S)) {
+          if (AR->getLoop() == L && AR->isAffine()) {
+            errs() << "Induction variable found.\n";
+            return &Phi;
+          }
+        }
+      }
+    }
+    
+    return IV;
+  }
+
+  // Loop fusion function
   bool loopFusion(Loop *L0, Loop *L1, ScalarEvolution &SE){
     // Find induction variable of the loop 
-    PHINode *IV0 = L0->getInductionVariable(SE);
-    PHINode *IV1 = L1->getInductionVariable(SE);
+    PHINode *IV0 = getInductionVariableModified(L0, SE);
+    PHINode *IV1 = getInductionVariableModified(L1, SE);
 
     if (!IV0 || !IV1) {
       errs() << "Error: impossible to find induction variables.\n";
@@ -209,7 +236,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     }
 
     // Change the uses of the induction variable of the second loop
-    IV1->replaceAllUsesWith(IV0); // IMPLEMENT IT FROM SCRATCH
+    //IV1->replaceAllUsesWith(IV0); // IMPLEMENT IT FROM SCRATCH
 
     // Moving the body of the second loop right after the body of the first loop,
     // and changing the exit of the first loop with the exit of the second loop.
@@ -236,11 +263,18 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
     // Getting the insert point:
     Instruction *InsertPt = Body0->getTerminator();
+    // Getting the instruction of increment for the second loop (we don't want to move it)
+    Value *IncValue1 = IV1->getIncomingValueForBlock(Latch1);
 
     // Instructions motion
     for (auto iter = Body1->begin(); iter != Body1->end(); ) {
       Instruction &Inst = *iter++;
       if (Inst.isTerminator()) break; 
+      if (isa<PHINode>(&Inst) || 
+          isa<CmpInst>(&Inst) || 
+          &Inst == dyn_cast_or_null<Instruction>(IncValue1)) 
+            continue;
+      Inst.replaceUsesOfWith(IV1, IV0);
       Inst.moveBefore(InsertPt); // otherwise, code motion
     }
 
@@ -291,6 +325,9 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           errs() << " and ";
           LB->getHeader()->printAsOperand(errs(), false);
           errs() << "\n";
+
+          if (loopFusion(LA, LB, SE))
+            errs() << "Fusion successfully applied!\n";
         }
       }
     }
