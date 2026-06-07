@@ -235,8 +235,13 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       return false; 
     }
 
-    // Change the uses of the induction variable of the second loop
-    //IV1->replaceAllUsesWith(IV0); // IMPLEMENT IT FROM SCRATCH
+    // Ensuring that the loops don't have if-else statements to avoid complications 
+    // during the code motions of the instruction from body 2 to body 1
+    // Since we have loops in simplified form, this is simply guaranteed by having 3 blocks
+    if (L0->getBlocks().size() > 3 || L1->getBlocks().size() > 3) {
+        errs() << "Error: loops have more than 3 blocks (if-else statements).\n";
+        return false;
+    }
 
     // Moving the body of the second loop right after the body of the first loop,
     // and changing the exit of the first loop with the exit of the second loop.
@@ -248,18 +253,24 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     BasicBlock *Latch0 = L0->getLoopLatch();
     BasicBlock *Latch1 = L1->getLoopLatch();
 
+    // this should never verify since we only have 3 basic blocks and canonical loops
+    /*
     if (!Latch0 || !Latch1) {
         errs() << "Error: loops do not have a single latch.\n";
         return false;
     }
+    */
 
     BasicBlock *Body0 = Latch0->getSinglePredecessor();
     BasicBlock *Body1 = Latch1->getSinglePredecessor();
 
+    // this should never verify since we only have 3 basic blocks and canonical loops
+    /*
     if (!Body0 || !Body1) {
         errs() << "Error: multiple latch predecessors (internal control flow detected).\n";
         return false; 
     }
+    */
 
     // Getting the insert point:
     Instruction *InsertPt = Body0->getTerminator();
@@ -328,6 +339,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
           if (loopFusion(LA, LB, SE))
             errs() << "Fusion successfully applied!\n";
+            // here we may need to add return PreservedAnalyses::none(); to allow infinite siblings loop fusion
+            // (at most one loop per function per run of the pass would be fuse, but it would not crash)
         }
       }
     }
