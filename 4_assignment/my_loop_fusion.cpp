@@ -268,7 +268,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       if (isa<PHINode>(&Inst) ||
           &Inst == dyn_cast_or_null<Instruction>(IncValue1)) 
             continue;
-      //Inst.replaceUsesOfWith(IV1, IV0); // we replace the uses only of the instruction we effectively move
+      Inst.replaceUsesOfWith(IV1, IV0); // we replace the uses only of the instruction we effectively move
       Inst.moveBefore(InsertPt); // code motion
     }
 
