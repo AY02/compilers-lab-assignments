@@ -198,42 +198,26 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     return true;
   }
 
-  // Get induction variable function:
-  PHINode *getInductionVariableModified(Loop *L, ScalarEvolution &SE) {
-    // Find induction variable of the loop with the API from LLVM
-    PHINode *IV = L->getInductionVariable(SE);
-
-    if (!IV) {
-      errs() << "Error: impossible to find induction variable with the API, trying to find in other ways.\n";
-      BasicBlock *Header = L->getHeader();
-      for (PHINode &Phi : Header->phis()) {
-        if (!SE.isSCEVable(Phi.getType())) continue;
-        const SCEV *S = SE.getSCEV(&Phi);
-        // Note: non-conservative choice. If the phi evolves as an affine expression
-        // in this loop, it is not guaranteed that it is the IV. But to avoid complex 
-        // control logic, and still allow expressive testings, we decided to apply this heuristic.
-        if (const SCEVAddRecExpr *AR = dyn_cast<SCEVAddRecExpr>(S)) {
-          if (AR->getLoop() == L && AR->isAffine()) {
-            errs() << "Induction variable found.\n";
-            return &Phi;
-          }
-        }
-      }
-    }
-    
-    return IV;
-  }
 
   // Loop fusion function
   bool loopFusion(Loop *L0, Loop *L1, ScalarEvolution &SE){
-    // Find induction variable of the loop 
-    PHINode *IV0 = getInductionVariableModified(L0, SE);
-    PHINode *IV1 = getInductionVariableModified(L1, SE);
+    // Count the number of phi nodes in the headers. 
+    // We expect exactly one phi node (the induction variable) in our simplified canonical loops.
+    // If there are more, the loop contains internal recurrences (like a sum reduction)
+    // which our basic code motion cannot safely fuse without breaking SSA.
+    unsigned PhiCount0 = 0;
+    for (auto &Phi : L0->getHeader()->phis()) PhiCount0++;
+    unsigned PhiCount1 = 0;
+    for (auto &Phi : L1->getHeader()->phis()) PhiCount1++;
 
-    if (!IV0 || !IV1) {
-      errs() << "Error: impossible to find induction variables.\n";
-      return false; 
+    if (PhiCount0 > 1 || PhiCount1 > 1) {
+        errs() << "Error: loops contain multiple phi nodes in header.\n";
+        return false;
     }
+
+    // Find induction variables of the loop (this correspond to the only phi node in the headers)
+    PHINode *IV0 = &*L0->getHeader()->phis().begin();
+    PHINode *IV1 = &*L1->getHeader()->phis().begin();
 
     // Ensuring that the loops don't have if-else statements to avoid complications 
     // during the code motions of the instruction from body 2 to body 1
@@ -272,9 +256,9 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     }
     */
 
-    // Getting the insert point:
+    // Getting the insert point of where to moving the instruction of the body of the second loop:
     Instruction *InsertPt = Body0->getTerminator();
-    // Getting the instruction of increment for the second loop (we don't want to move it)
+    // Getting the increment instruction for the second loop (we don't want to move it)
     Value *IncValue1 = IV1->getIncomingValueForBlock(Latch1);
 
     // Instructions motion
@@ -285,12 +269,13 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           isa<CmpInst>(&Inst) || 
           &Inst == dyn_cast_or_null<Instruction>(IncValue1)) 
             continue;
-      Inst.replaceUsesOfWith(IV1, IV0);
-      Inst.moveBefore(InsertPt); // otherwise, code motion
+      Inst.replaceUsesOfWith(IV1, IV0); // we replace the uses only of the instruction we effectively move
+      Inst.moveBefore(InsertPt); // code motion
     }
 
     // Changing the exit block of the first loop with the exit block of the second loop
     BasicBlock *Exiting0 = L0->getExitingBlock();
+    BasicBlock *Exiting1 = L1->getExitingBlock();
     BasicBlock *Exit0 = L0->getExitBlock();
     BasicBlock *Exit1 = L1->getExitBlock();
 
@@ -300,7 +285,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     if (BranchInst *BI = dyn_cast<BranchInst>(Exiting0->getTerminator())){
       for (unsigned i = 0; i < BI->getNumSuccessors(); ++i){
         if (BI->getSuccessor(i) == Exit0)
-            BI->setSuccessor(i, Exit1);
+          BI->setSuccessor(i, Exit1);
       }
     }
     else return false;

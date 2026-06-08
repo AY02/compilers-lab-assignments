@@ -1,7 +1,7 @@
-; ModuleID = 'test/alessio_tests/test.c'
-source_filename = "test/alessio_tests/test.c"
+; ModuleID = 'test.c'
+source_filename = "test.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
-target triple = "x86_64-unknown-linux-gnu"
+target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local void @test_simple(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2) #0 {
@@ -654,6 +654,182 @@ define dso_local void @test_same_guard(ptr noalias noundef %0, ptr noalias nound
 }
 
 ; Function Attrs: noinline nounwind uwtable
+define dso_local void @test_same_guard_exit_phi(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2) #0 {
+  %4 = alloca ptr, align 8
+  %5 = alloca ptr, align 8
+  %6 = alloca i32, align 4
+  %7 = alloca i32, align 4
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  store ptr %0, ptr %4, align 8
+  store ptr %1, ptr %5, align 8
+  store i32 %2, ptr %6, align 4
+  store i32 0, ptr %7, align 4
+  %10 = load i32, ptr %6, align 4
+  %11 = icmp sgt i32 %10, 0
+  br i1 %11, label %12, label %25
+
+12:                                               ; preds = %3
+  store i32 0, ptr %8, align 4
+  br label %13
+
+13:                                               ; preds = %20, %12
+  %14 = load ptr, ptr %4, align 8
+  %15 = load i32, ptr %8, align 4
+  %16 = sext i32 %15 to i64
+  %17 = getelementptr inbounds i32, ptr %14, i64 %16
+  store i32 1, ptr %17, align 4
+  %18 = load i32, ptr %8, align 4
+  %19 = add nsw i32 %18, 1
+  store i32 %19, ptr %8, align 4
+  br label %20
+
+20:                                               ; preds = %13
+  %21 = load i32, ptr %8, align 4
+  %22 = load i32, ptr %6, align 4
+  %23 = icmp slt i32 %21, %22
+  br i1 %23, label %13, label %24, !llvm.loop !27
+
+24:                                               ; preds = %20
+  br label %25
+
+25:                                               ; preds = %24, %3
+  %26 = load i32, ptr %6, align 4
+  %27 = icmp sgt i32 %26, 0
+  br i1 %27, label %28, label %48
+
+28:                                               ; preds = %25
+  store i32 0, ptr %9, align 4
+  br label %29
+
+29:                                               ; preds = %43, %28
+  %30 = load ptr, ptr %5, align 8
+  %31 = load i32, ptr %9, align 4
+  %32 = sext i32 %31 to i64
+  %33 = getelementptr inbounds i32, ptr %30, i64 %32
+  store i32 2, ptr %33, align 4
+  %34 = load ptr, ptr %5, align 8
+  %35 = load i32, ptr %9, align 4
+  %36 = sext i32 %35 to i64
+  %37 = getelementptr inbounds i32, ptr %34, i64 %36
+  %38 = load i32, ptr %37, align 4
+  %39 = load i32, ptr %7, align 4
+  %40 = add nsw i32 %39, %38
+  store i32 %40, ptr %7, align 4
+  %41 = load i32, ptr %9, align 4
+  %42 = add nsw i32 %41, 1
+  store i32 %42, ptr %9, align 4
+  br label %43
+
+43:                                               ; preds = %29
+  %44 = load i32, ptr %9, align 4
+  %45 = load i32, ptr %6, align 4
+  %46 = icmp slt i32 %44, %45
+  br i1 %46, label %29, label %47, !llvm.loop !28
+
+47:                                               ; preds = %43
+  br label %48
+
+48:                                               ; preds = %47, %25
+  %49 = load i32, ptr %7, align 4
+  store i32 %49, ptr %6, align 4
+  ret void
+}
+
+; Function Attrs: noinline nounwind uwtable
+define dso_local void @test_guarded_exit_phi(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2, i32 noundef %3) #0 {
+  %5 = alloca ptr, align 8
+  %6 = alloca ptr, align 8
+  %7 = alloca i32, align 4
+  %8 = alloca i32, align 4
+  %9 = alloca i32, align 4
+  %10 = alloca i32, align 4
+  %11 = alloca i32, align 4
+  %12 = alloca i32, align 4
+  store ptr %0, ptr %5, align 8
+  store ptr %1, ptr %6, align 8
+  store i32 %2, ptr %7, align 4
+  store i32 %3, ptr %8, align 4
+  store i32 0, ptr %9, align 4
+  store i32 0, ptr %10, align 4
+  %13 = load i32, ptr %7, align 4
+  %14 = icmp sgt i32 %13, 0
+  br i1 %14, label %15, label %31
+
+15:                                               ; preds = %4
+  store i32 0, ptr %11, align 4
+  br label %16
+
+16:                                               ; preds = %26, %15
+  %17 = load i32, ptr %8, align 4
+  %18 = load ptr, ptr %5, align 8
+  %19 = load i32, ptr %11, align 4
+  %20 = sext i32 %19 to i64
+  %21 = getelementptr inbounds i32, ptr %18, i64 %20
+  store i32 %17, ptr %21, align 4
+  %22 = load i32, ptr %8, align 4
+  %23 = mul nsw i32 %22, 2
+  store i32 %23, ptr %9, align 4
+  %24 = load i32, ptr %11, align 4
+  %25 = add nsw i32 %24, 1
+  store i32 %25, ptr %11, align 4
+  br label %26
+
+26:                                               ; preds = %16
+  %27 = load i32, ptr %11, align 4
+  %28 = load i32, ptr %7, align 4
+  %29 = icmp slt i32 %27, %28
+  br i1 %29, label %16, label %30, !llvm.loop !29
+
+30:                                               ; preds = %26
+  br label %31
+
+31:                                               ; preds = %30, %4
+  %32 = load i32, ptr %7, align 4
+  %33 = icmp sgt i32 %32, 0
+  br i1 %33, label %34, label %50
+
+34:                                               ; preds = %31
+  store i32 0, ptr %12, align 4
+  br label %35
+
+35:                                               ; preds = %45, %34
+  %36 = load i32, ptr %8, align 4
+  %37 = load ptr, ptr %6, align 8
+  %38 = load i32, ptr %12, align 4
+  %39 = sext i32 %38 to i64
+  %40 = getelementptr inbounds i32, ptr %37, i64 %39
+  store i32 %36, ptr %40, align 4
+  %41 = load i32, ptr %8, align 4
+  %42 = mul nsw i32 %41, 3
+  store i32 %42, ptr %10, align 4
+  %43 = load i32, ptr %12, align 4
+  %44 = add nsw i32 %43, 1
+  store i32 %44, ptr %12, align 4
+  br label %45
+
+45:                                               ; preds = %35
+  %46 = load i32, ptr %12, align 4
+  %47 = load i32, ptr %7, align 4
+  %48 = icmp slt i32 %46, %47
+  br i1 %48, label %35, label %49, !llvm.loop !30
+
+49:                                               ; preds = %45
+  br label %50
+
+50:                                               ; preds = %49, %31
+  %51 = load i32, ptr %9, align 4
+  %52 = load ptr, ptr %5, align 8
+  %53 = getelementptr inbounds i32, ptr %52, i64 0
+  store i32 %51, ptr %53, align 4
+  %54 = load i32, ptr %10, align 4
+  %55 = load ptr, ptr %6, align 8
+  %56 = getelementptr inbounds i32, ptr %55, i64 0
+  store i32 %54, ptr %56, align 4
+  ret void
+}
+
+; Function Attrs: noinline nounwind uwtable
 define dso_local void @test_different_guards(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2, i32 noundef %3) #0 {
   %5 = alloca ptr, align 8
   %6 = alloca ptr, align 8
@@ -688,7 +864,7 @@ define dso_local void @test_different_guards(ptr noalias noundef %0, ptr noalias
   %22 = load i32, ptr %9, align 4
   %23 = load i32, ptr %7, align 4
   %24 = icmp slt i32 %22, %23
-  br i1 %24, label %14, label %25, !llvm.loop !27
+  br i1 %24, label %14, label %25, !llvm.loop !31
 
 25:                                               ; preds = %21
   br label %26
@@ -717,7 +893,7 @@ define dso_local void @test_different_guards(ptr noalias noundef %0, ptr noalias
   %38 = load i32, ptr %10, align 4
   %39 = load i32, ptr %8, align 4
   %40 = icmp slt i32 %38, %39
-  br i1 %40, label %30, label %41, !llvm.loop !28
+  br i1 %40, label %30, label %41, !llvm.loop !32
 
 41:                                               ; preds = %37
   br label %42
@@ -736,7 +912,7 @@ attributes #0 = { noinline nounwind uwtable "frame-pointer"="all" "min-legal-vec
 !2 = !{i32 7, !"PIE Level", i32 2}
 !3 = !{i32 7, !"uwtable", i32 2}
 !4 = !{i32 7, !"frame-pointer", i32 2}
-!5 = !{!"clang version 19.1.7 (/home/runner/work/llvm-project/llvm-project/clang cd708029e0b2869e80abe31ddb175f7c35361f90)"}
+!5 = !{!"Ubuntu clang version 19.1.7 (++20250114103238+cd708029e0b2-1~exp1~20250114103342.77)"}
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}
 !8 = distinct !{!8, !7}
@@ -760,3 +936,7 @@ attributes #0 = { noinline nounwind uwtable "frame-pointer"="all" "min-legal-vec
 !26 = distinct !{!26, !7}
 !27 = distinct !{!27, !7}
 !28 = distinct !{!28, !7}
+!29 = distinct !{!29, !7}
+!30 = distinct !{!30, !7}
+!31 = distinct !{!31, !7}
+!32 = distinct !{!32, !7}
