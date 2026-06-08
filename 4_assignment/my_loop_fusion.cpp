@@ -338,9 +338,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           errs() << "\n";
 
           if (loopFusion(LA, LB, SE))
-            errs() << "Fusion successfully applied!\n";
-            // here we may need to add return PreservedAnalyses::none(); to allow infinite siblings loop fusion
-            // (at most one loop per function per run of the pass would be fuse, but it would not crash)
+            errs() << "Fusion successfully applied!\n"; // here we may need to recalculate the analysis
         }
       }
     }
