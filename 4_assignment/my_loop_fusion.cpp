@@ -265,11 +265,10 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     for (auto iter = Body1->begin(); iter != Body1->end(); ) {
       Instruction &Inst = *iter++;
       if (Inst.isTerminator()) break; 
-      if (isa<PHINode>(&Inst) || 
-          isa<CmpInst>(&Inst) || 
+      if (isa<PHINode>(&Inst) ||
           &Inst == dyn_cast_or_null<Instruction>(IncValue1)) 
             continue;
-      Inst.replaceUsesOfWith(IV1, IV0); // we replace the uses only of the instruction we effectively move
+      //Inst.replaceUsesOfWith(IV1, IV0); // we replace the uses only of the instruction we effectively move
       Inst.moveBefore(InsertPt); // code motion
     }
 
