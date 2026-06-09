@@ -126,7 +126,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // If at least one of the two algebraic expressions of the trip count could not be calculated,
     // then the two loops cannot be merged.
     if (isa<SCEVCouldNotCompute>(TripCount0) || isa<SCEVCouldNotCompute>(TripCount1)) {
-      errs() << "Different step.\n";
+      errs() << "Algebraic expression of the trip count cannot be calculated.\n";
       return false;
     }
     // If the algebraic expressions of the trip counts are different, then they cannot be merged.
@@ -185,13 +185,30 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           errs() << "Different steps.\n";
           return false;
         }
-        // Calculate distance based on starting points: d = Start0 (&A) - Start1 (&A + offset).
+        // Calculate spatial distance based on starting points: d = Start0 (&A) - Start1 (&A + offset).
         const SCEV *Dist = SE.getMinusSCEV(AR0->getStart(), AR1->getStart());
-        errs() << "Distance: " << *Dist << ".\n";
-        // If the distance is not non-negative, or cannot be determined at compile time, then the
-        // two loops cannot be merged.
-        if (!SE.isKnownNonNegative(Dist))
+        const SCEV *Step = AR0->getStepRecurrence(SE);
+
+        errs() << "Distance: " << *Dist << "\tStep: " << *Step << "\n";
+
+        // if the step is positive
+        if (SE.isKnownPositive(Step)) {
+          // if the distance is not non-negative, or cannot be determined at compile time,
+          // then the two loops cannot be merged
+          if (!SE.isKnownNonNegative(Dist)){
+            errs() << "Negative temporal dependence detected (positive step).\n";
+            return false;
+          }
+        } else if (SE.isKnownNegative(Step)) { // while if the step is negative
+          // if the distance is not negative or zero, then the two loops cannot be merged
+          if (!SE.isKnownNegative(Dist)){
+            errs() << "Negative temporal dependence detected (negative step).\n";
+            return false;
+          } 
+        } else {
+          // step cannot be determined at compile time, or infinite (es. true)
           return false;
+        }
       }
     }
 
