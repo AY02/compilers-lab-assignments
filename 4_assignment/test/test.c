@@ -86,54 +86,6 @@ void test_same_guard(int * restrict A, int * restrict B, int n) {
     }
 }
 
-void test_same_guard_exit_phi(int * restrict A, int * restrict B, int n) {
-    int somma = 0;
-    if (n > 0) {
-        int i = 0;
-        do {
-            A[i] = 1;
-            i++;
-        } while (i < n);
-    }
-    if (n > 0) {
-        int i = 0;
-        do {
-            B[i] = 2;
-            somma += B[i];
-            i++;
-        } while (i < n);
-    }
-    n = somma;
-}
-
-void test_guarded_exit_phi(int * restrict A, int * restrict B, int n, int x) {
-    int val_a = 0;
-    int val_b = 0;
-
-    if (n > 0) {
-        int i = 0;
-        do {
-            A[i] = x;
-            val_a = x * 2; 
-            i++;
-        } while (i < n);
-    }
-
-    if (n > 0) {
-        int i = 0;
-        do {
-            B[i] = x;
-            val_b = x * 3;
-            i++;
-        } while (i < n);
-    }
-
-    // Outside loops variable uses, forcing phi node creation in exit blocks. Still, this is blocked by adjacency
-    // (it also creates phi merging instruction between the two loops)
-    A[0] = val_a; 
-    B[0] = val_b; 
-}
-
 void test_different_guards(int * restrict A, int * restrict B, int n, int m) {
     if (n > 0) {
         int i = 0;
@@ -149,4 +101,19 @@ void test_different_guards(int * restrict A, int * restrict B, int n, int m) {
             i++;
         } while (i < m);
     }
+}
+
+void test_IV1_use_outside_loops(int * restrict A, int * restrict B, int n) {
+    int i = 0;
+    do {
+        A[i] = 1;
+        i++;
+    } while (i < n);
+    int j = 0;
+    do {
+        B[j] = 2;
+        j++;
+    } while (j < n);
+    int random_instruction = i + 5;
+    int j_use = j + 1;
 }

@@ -259,6 +259,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // Getting the insert point of where to moving the instruction of the body of the second loop:
     Instruction *InsertPt = Body0->getTerminator();
     // Getting the increment instruction for the second loop (we don't want to move it)
+    // Also we want to change the uses of the second with the first
+    Value *IncValue0 = IV0->getIncomingValueForBlock(Latch0);
     Value *IncValue1 = IV1->getIncomingValueForBlock(Latch1);
 
     // Instructions motion
@@ -270,6 +272,26 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
             continue;
       Inst.replaceUsesOfWith(IV1, IV0); // we replace the uses only of the instruction we effectively move
       Inst.moveBefore(InsertPt); // code motion
+    }
+
+    // Replacing uses outside the loops
+    for (auto iter = IV1->use_begin(); iter != IV1->use_end(); ) {
+      Use &U = *iter++; // advancing the iterator before it is modified
+      Instruction *UserInst = dyn_cast<Instruction>(U.getUser()); 
+      if (UserInst && L1->contains(UserInst)) 
+        continue; // ignoring uses inside the "skeleton" of the second loop
+      U.set(IV0);
+    }
+
+    // Replacing the uses of the incremented variable of the second loop, with the incremented variable of the first
+    if (IncValue0 && IncValue1) {
+      for (auto iter = IncValue1->use_begin(); iter != IncValue1->use_end(); ) {
+        Use &U = *iter++;
+        Instruction *UserInst = dyn_cast<Instruction>(U.getUser());
+        if (UserInst && L1->contains(UserInst)) 
+          continue;
+        U.set(IncValue0);
+      }
     }
 
     // Changing the exit block of the first loop with the exit block of the second loop
