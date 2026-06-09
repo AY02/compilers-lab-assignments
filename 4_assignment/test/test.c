@@ -24,6 +24,13 @@ void test_negative_dependence(int * restrict A, int * restrict B) {
         B[i] = A[i + 2];
 }
 
+void test_negative_dependece_2(int * restrict A, int * restrict B) {
+    for (int i = 100; i > 0; i--)
+        A[i] = 1;
+    for (int i = 100; i > 0; i--)
+        B[i] = A[i - 1]; 
+}
+
 void test_positive_dependence(int * restrict A, int * restrict B) {
     for (int i = 0; i < 100; i++) {
         A[i + 2] = 10;
@@ -114,6 +121,21 @@ void test_IV1_use_outside_loops(int * restrict A, int * restrict B, int n) {
         B[j] = 2;
         j++;
     } while (j < n);
+    int random_instruction = i + 5;
+    int j_use = j + 1;
+}
+
+void test_IV1_use_outside_loops_2(int * restrict A, int * restrict B, int n) {
+    int i = 0;
+    while (i < n) {
+        A[i] = 1;
+        i++;
+    }
+    int j = 0;
+    while (j < n) {
+        B[j] = 2;
+        j++;
+    }
     int random_instruction = i + 5;
     int j_use = j + 1;
 }

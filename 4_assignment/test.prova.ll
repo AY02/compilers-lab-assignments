@@ -1,5 +1,5 @@
 ; ModuleID = 'test/test.m2r.ll'
-source_filename = "test.c"
+source_filename = "test/test.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
@@ -139,6 +139,51 @@ define dso_local void @test_negative_dependence(ptr noalias noundef %0, ptr noal
 }
 
 ; Function Attrs: noinline nounwind uwtable
+define dso_local void @test_negative_dependece_2(ptr noalias noundef %0, ptr noalias noundef %1) #0 {
+  br label %3
+
+3:                                                ; preds = %14, %2
+  %.01 = phi i32 [ 100, %2 ], [ %15, %14 ]
+  %4 = icmp sgt i32 %.01, 0
+  br i1 %4, label %5, label %22
+
+5:                                                ; preds = %3
+  %6 = sext i32 %.01 to i64
+  %7 = getelementptr inbounds i32, ptr %0, i64 %6
+  store i32 1, ptr %7, align 4
+  %8 = sub nsw i32 %.01, 1
+  %9 = sext i32 %8 to i64
+  %10 = getelementptr inbounds i32, ptr %0, i64 %9
+  %11 = load i32, ptr %10, align 4
+  %12 = sext i32 %.01 to i64
+  %13 = getelementptr inbounds i32, ptr %1, i64 %12
+  store i32 %11, ptr %13, align 4
+  br label %14
+
+14:                                               ; preds = %5
+  %15 = add nsw i32 %.01, -1
+  br label %3, !llvm.loop !13
+
+16:                                               ; No predecessors!
+  br label %17
+
+17:                                               ; preds = %20, %16
+  %.0 = phi i32 [ 100, %16 ], [ %21, %20 ]
+  %18 = icmp sgt i32 %.0, 0
+  br i1 %18, label %19, label %22
+
+19:                                               ; preds = %17
+  br label %20
+
+20:                                               ; preds = %19
+  %21 = add nsw i32 %.0, -1
+  br label %17, !llvm.loop !14
+
+22:                                               ; preds = %3, %17
+  ret void
+}
+
+; Function Attrs: noinline nounwind uwtable
 define dso_local void @test_positive_dependence(ptr noalias noundef %0, ptr noalias noundef %1) #0 {
   br label %3
 
@@ -162,7 +207,7 @@ define dso_local void @test_positive_dependence(ptr noalias noundef %0, ptr noal
 
 14:                                               ; preds = %5
   %15 = add nsw i32 %.01, 1
-  br label %3, !llvm.loop !13
+  br label %3, !llvm.loop !15
 
 16:                                               ; No predecessors!
   br label %17
@@ -177,7 +222,7 @@ define dso_local void @test_positive_dependence(ptr noalias noundef %0, ptr noal
 
 20:                                               ; preds = %19
   %21 = add nsw i32 %.0, 1
-  br label %17, !llvm.loop !14
+  br label %17, !llvm.loop !16
 
 22:                                               ; preds = %3, %17
   ret void
@@ -200,7 +245,7 @@ define dso_local void @test_different_trip_count(ptr noalias noundef %0, ptr noa
 
 10:                                               ; preds = %7
   %11 = add nsw i32 %.01, 1
-  br label %5, !llvm.loop !15
+  br label %5, !llvm.loop !17
 
 12:                                               ; preds = %5
   br label %13
@@ -218,7 +263,7 @@ define dso_local void @test_different_trip_count(ptr noalias noundef %0, ptr noa
 
 18:                                               ; preds = %15
   %19 = add nsw i32 %.0, 1
-  br label %13, !llvm.loop !16
+  br label %13, !llvm.loop !18
 
 20:                                               ; preds = %13
   ret void
@@ -241,7 +286,7 @@ define dso_local void @test_interleaved_code(ptr noalias noundef %0, ptr noalias
 
 9:                                                ; preds = %6
   %10 = add nsw i32 %.01, 1
-  br label %4, !llvm.loop !17
+  br label %4, !llvm.loop !19
 
 11:                                               ; preds = %4
   %12 = getelementptr inbounds i32, ptr %0, i64 0
@@ -261,7 +306,7 @@ define dso_local void @test_interleaved_code(ptr noalias noundef %0, ptr noalias
 
 18:                                               ; preds = %15
   %19 = add nsw i32 %.0, 1
-  br label %13, !llvm.loop !18
+  br label %13, !llvm.loop !20
 
 20:                                               ; preds = %13
   ret void
@@ -284,7 +329,7 @@ define dso_local void @test_different_step(ptr noalias noundef %0, ptr noalias n
 
 8:                                                ; preds = %5
   %9 = add nsw i32 %.01, 1
-  br label %3, !llvm.loop !19
+  br label %3, !llvm.loop !21
 
 10:                                               ; preds = %3
   br label %11
@@ -303,7 +348,7 @@ define dso_local void @test_different_step(ptr noalias noundef %0, ptr noalias n
 
 17:                                               ; preds = %13
   %18 = add nsw i32 %.0, 1
-  br label %11, !llvm.loop !20
+  br label %11, !llvm.loop !22
 
 19:                                               ; preds = %11
   ret void
@@ -336,7 +381,7 @@ define dso_local void @test_read_after_read(ptr noalias noundef %0, ptr noalias 
 
 18:                                               ; preds = %6
   %19 = add nsw i32 %.01, 1
-  br label %4, !llvm.loop !21
+  br label %4, !llvm.loop !23
 
 20:                                               ; No predecessors!
   br label %21
@@ -351,7 +396,7 @@ define dso_local void @test_read_after_read(ptr noalias noundef %0, ptr noalias 
 
 24:                                               ; preds = %23
   %25 = add nsw i32 %.0, 1
-  br label %21, !llvm.loop !22
+  br label %21, !llvm.loop !24
 
 26:                                               ; preds = %4, %21
   ret void
@@ -377,7 +422,7 @@ define dso_local void @test_non_affine_access(ptr noalias noundef %0, ptr noalia
 
 12:                                               ; preds = %6
   %13 = add nsw i32 %.01, 1
-  br label %4, !llvm.loop !23
+  br label %4, !llvm.loop !25
 
 14:                                               ; preds = %4
   br label %15
@@ -398,7 +443,7 @@ define dso_local void @test_non_affine_access(ptr noalias noundef %0, ptr noalia
 
 23:                                               ; preds = %17
   %24 = add nsw i32 %.0, 1
-  br label %15, !llvm.loop !24
+  br label %15, !llvm.loop !26
 
 25:                                               ; preds = %15
   ret void
@@ -425,7 +470,7 @@ define dso_local void @test_same_guard(ptr noalias noundef %0, ptr noalias nound
 
 12:                                               ; preds = %6
   %13 = icmp slt i32 %9, %2
-  br i1 %13, label %6, label %22, !llvm.loop !25
+  br i1 %13, label %6, label %22, !llvm.loop !27
 
 14:                                               ; No predecessors!
   br label %15
@@ -444,7 +489,7 @@ define dso_local void @test_same_guard(ptr noalias noundef %0, ptr noalias nound
 
 20:                                               ; preds = %18
   %21 = icmp slt i32 %19, %2
-  br i1 %21, label %18, label %22, !llvm.loop !26
+  br i1 %21, label %18, label %22, !llvm.loop !28
 
 22:                                               ; preds = %12, %20
   br label %23
@@ -471,7 +516,7 @@ define dso_local void @test_different_guards(ptr noalias noundef %0, ptr noalias
 
 11:                                               ; preds = %7
   %12 = icmp slt i32 %10, %2
-  br i1 %12, label %7, label %13, !llvm.loop !27
+  br i1 %12, label %7, label %13, !llvm.loop !29
 
 13:                                               ; preds = %11
   br label %14
@@ -493,7 +538,7 @@ define dso_local void @test_different_guards(ptr noalias noundef %0, ptr noalias
 
 21:                                               ; preds = %17
   %22 = icmp slt i32 %20, %3
-  br i1 %22, label %17, label %23, !llvm.loop !28
+  br i1 %22, label %17, label %23, !llvm.loop !30
 
 23:                                               ; preds = %21
   br label %24
@@ -519,7 +564,7 @@ define dso_local void @test_IV1_use_outside_loops(ptr noalias noundef %0, ptr no
 
 10:                                               ; preds = %4
   %11 = icmp slt i32 %7, %2
-  br i1 %11, label %4, label %17, !llvm.loop !29
+  br i1 %11, label %4, label %17, !llvm.loop !31
 
 12:                                               ; No predecessors!
   br label %13
@@ -531,11 +576,48 @@ define dso_local void @test_IV1_use_outside_loops(ptr noalias noundef %0, ptr no
 
 15:                                               ; preds = %13
   %16 = icmp slt i32 %14, %2
-  br i1 %16, label %13, label %17, !llvm.loop !30
+  br i1 %16, label %13, label %17, !llvm.loop !32
 
 17:                                               ; preds = %10, %15
   %18 = add nsw i32 %7, 5
   %19 = add nsw i32 %7, 1
+  ret void
+}
+
+; Function Attrs: noinline nounwind uwtable
+define dso_local void @test_IV1_use_outside_loops_2(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2) #0 {
+  br label %4
+
+4:                                                ; preds = %7, %3
+  %.01 = phi i32 [ 0, %3 ], [ %10, %7 ]
+  %5 = icmp slt i32 %.01, %2
+  %6 = icmp slt i32 %.01, %2
+  br i1 %5, label %7, label %17
+
+7:                                                ; preds = %4
+  %8 = sext i32 %.01 to i64
+  %9 = getelementptr inbounds i32, ptr %0, i64 %8
+  store i32 1, ptr %9, align 4
+  %10 = add nsw i32 %.01, 1
+  br label %4, !llvm.loop !33
+
+11:                                               ; No predecessors!
+  br label %12
+
+12:                                               ; preds = %13, %11
+  %.0 = phi i32 [ 0, %11 ], [ %16, %13 ]
+  br i1 %6, label %13, label %17
+
+13:                                               ; preds = %12
+  %14 = sext i32 %.0 to i64
+  %15 = getelementptr inbounds i32, ptr %1, i64 %14
+  store i32 2, ptr %15, align 4
+  %16 = add nsw i32 %.0, 1
+  br label %12, !llvm.loop !34
+
+17:                                               ; preds = %4, %12
+  %18 = add nsw i32 %.01, 5
+  %19 = add nsw i32 %.01, 1
   ret void
 }
 
@@ -575,3 +657,7 @@ attributes #0 = { noinline nounwind uwtable "frame-pointer"="all" "min-legal-vec
 !28 = distinct !{!28, !7}
 !29 = distinct !{!29, !7}
 !30 = distinct !{!30, !7}
+!31 = distinct !{!31, !7}
+!32 = distinct !{!32, !7}
+!33 = distinct !{!33, !7}
+!34 = distinct !{!34, !7}

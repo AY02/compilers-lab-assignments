@@ -274,6 +274,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       Inst.moveBefore(InsertPt); // code motion
     }
 
+
     // Replacing uses outside the loops
     for (auto iter = IV1->use_begin(); iter != IV1->use_end(); ) {
       Use &U = *iter++; // advancing the iterator before it is modified
