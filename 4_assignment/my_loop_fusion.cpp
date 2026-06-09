@@ -201,7 +201,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           }
         } else if (SE.isKnownNegative(Step)) { // while if the step is negative
           // if the distance is not negative or zero, then the two loops cannot be merged
-          if (!SE.isKnownNegative(Dist)){
+          if (!SE.isKnownNegative(Dist) && !Dist->isZero()){
             errs() << "Negative temporal dependence detected (negative step).\n";
             return false;
           } 

@@ -53,43 +53,43 @@ define dso_local void @test_simple(ptr noalias noundef %0, ptr noalias noundef %
 define dso_local void @test_negative_step_loop(ptr noalias noundef %0, ptr noalias noundef %1) #0 {
   br label %3
 
-3:                                                ; preds = %8, %2
-  %.01 = phi i32 [ 100, %2 ], [ %9, %8 ]
+3:                                                ; preds = %13, %2
+  %.01 = phi i32 [ 100, %2 ], [ %14, %13 ]
   %4 = icmp sgt i32 %.01, 0
-  br i1 %4, label %5, label %10
+  br i1 %4, label %5, label %21
 
 5:                                                ; preds = %3
   %6 = sext i32 %.01 to i64
   %7 = getelementptr inbounds i32, ptr %0, i64 %6
   store i32 1, ptr %7, align 4
-  br label %8
+  %8 = sext i32 %.01 to i64
+  %9 = getelementptr inbounds i32, ptr %0, i64 %8
+  %10 = load i32, ptr %9, align 4
+  %11 = sext i32 %.01 to i64
+  %12 = getelementptr inbounds i32, ptr %1, i64 %11
+  store i32 %10, ptr %12, align 4
+  br label %13
 
-8:                                                ; preds = %5
-  %9 = add nsw i32 %.01, -1
+13:                                               ; preds = %5
+  %14 = add nsw i32 %.01, -1
   br label %3, !llvm.loop !9
 
-10:                                               ; preds = %3
-  br label %11
+15:                                               ; No predecessors!
+  br label %16
 
-11:                                               ; preds = %19, %10
-  %.0 = phi i32 [ 100, %10 ], [ %20, %19 ]
-  %12 = icmp sgt i32 %.0, 0
-  br i1 %12, label %13, label %21
+16:                                               ; preds = %19, %15
+  %.0 = phi i32 [ 100, %15 ], [ %20, %19 ]
+  %17 = icmp sgt i32 %.0, 0
+  br i1 %17, label %18, label %21
 
-13:                                               ; preds = %11
-  %14 = sext i32 %.0 to i64
-  %15 = getelementptr inbounds i32, ptr %0, i64 %14
-  %16 = load i32, ptr %15, align 4
-  %17 = sext i32 %.0 to i64
-  %18 = getelementptr inbounds i32, ptr %1, i64 %17
-  store i32 %16, ptr %18, align 4
+18:                                               ; preds = %16
   br label %19
 
-19:                                               ; preds = %13
+19:                                               ; preds = %18
   %20 = add nsw i32 %.0, -1
-  br label %11, !llvm.loop !10
+  br label %16, !llvm.loop !10
 
-21:                                               ; preds = %11
+21:                                               ; preds = %3, %16
   ret void
 }
 
