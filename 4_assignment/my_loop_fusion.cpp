@@ -367,11 +367,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           if (loopFusion(LA, LB, SE)){
             errs() << "Fusion successfully applied!\n"; 
             // here we need to recalculate the analyses if invalidated
-            LI = FAM.getResult<LoopAnalysis>(F);
-            DT = FAM.getResult<DominatorTreeAnalysis>(F);
-            PDT = FAM.getResult<PostDominatorTreeAnalysis>(F);
-            SE = FAM.getResult<ScalarEvolutionAnalysis>(F);
-            DI = FAM.getResult<DependenceAnalysis>(F);
+            return PreservedAnalysis::none();
           }
         }
       }
