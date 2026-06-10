@@ -315,6 +315,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
 
+    bool changed = false;
+
     errs() << "Starting analysis for " << F.getName() << "...\n";
 
     LoopInfo &LI = FAM.getResult<LoopAnalysis>(F);
@@ -327,11 +329,11 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
     for (unsigned i = 0; i < Loops.size(); i++) {
       Loop *LA = Loops[i];
-      if (!LA->isLoopSimplifyForm())
+      if (!LA || !LA->isLoopSimplifyForm())
         continue;
       for (unsigned j = i + 1; j < Loops.size(); j++) {
         Loop *LB = Loops[j];
-        if (!LB->isLoopSimplifyForm())
+        if (!LB || !LB->isLoopSimplifyForm())
           continue;
         if (LA->getParentLoop() != LB->getParentLoop())
           continue;
@@ -341,10 +343,17 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           errs() << " and ";
           LB->getHeader()->printAsOperand(errs(), false);
           errs() << "\n";
-
           if (loopFusion(LA, LB, SE)) {
-            errs() << "Fusion successfully applied!\n"; 
+            errs() << "Fusion successfully applied!\n";
+            Loops[j] = nullptr;
+            changed = true;
             // here we need to recalculate the analyses if invalidated
+            FAM.invalidate(F, PreservedAnalyses::none());
+            LI = FAM.getResult<LoopAnalysis>(F);
+            DT = FAM.getResult<DominatorTreeAnalysis>(F);
+            PDT = FAM.getResult<PostDominatorTreeAnalysis>(F);
+            SE = FAM.getResult<ScalarEvolutionAnalysis>(F);
+            DI = FAM.getResult<DependenceAnalysis>(F);
           }
         }
       }
@@ -352,7 +361,10 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
     errs() << "Ending analysis for " << F.getName() << "...\n\n";
 
-    return PreservedAnalyses::all();
+    if (changed)
+      return PreservedAnalyses::none();
+    else
+      return PreservedAnalyses::all();
   }
   static bool isRequired() { return true; }
 };
