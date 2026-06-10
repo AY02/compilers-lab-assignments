@@ -161,8 +161,11 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         // Dep acts as a strict dependency checker.
         std::unique_ptr<Dependence> Dep = DI.depends(I0, I1, true);
         // There are no dependencies between the two instructions.
-        if (!Dep)
+        if (!Dep){
+          errs() << "No depencency between instructions\n";
           continue;
+        }
+
         // The compiler doesn't understand the dependency and assumes the worst case.
         if (Dep->isConfused())
           return false;
@@ -173,8 +176,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         const SCEV *S0 = SE.getSCEV(Ptr0);
         const SCEV *S1 = SE.getSCEV(Ptr1); // questo mi ritorna la f(i)
         // Polynomial expressions expressions of array indices (example: A[f(i)]).
-        const SCEVAddRecExpr *AR0 = dyn_cast<SCEVAddRecExpr>(S0); // questo mi serve per castarlo alle espressioni affini
-        const SCEVAddRecExpr *AR1 = dyn_cast<SCEVAddRecExpr>(S1); // esempio di non affine: a[p[i]]
+        const SCEVAddRecExpr *AR0 = dyn_cast<SCEVAddRecExpr>(S0);
+        const SCEVAddRecExpr *AR1 = dyn_cast<SCEVAddRecExpr>(S1);
         if (!AR0 || !AR1) {
           errs() << "Access with non-affine indexes.\n";
           return false;
@@ -361,8 +364,15 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           LB->getHeader()->printAsOperand(errs(), false);
           errs() << "\n";
 
-          if (loopFusion(LA, LB, SE))
-            errs() << "Fusion successfully applied!\n"; // here we may need to recalculate the analysis
+          if (loopFusion(LA, LB, SE)){
+            errs() << "Fusion successfully applied!\n"; 
+            // here we need to recalculate the analyses if invalidated
+            LI = FAM.getResult<LoopAnalysis>(F);
+            DT = FAM.getResult<DominatorTreeAnalysis>(F);
+            PDT = FAM.getResult<PostDominatorTreeAnalysis>(F);
+            SE = FAM.getResult<ScalarEvolutionAnalysis>(F);
+            DI = FAM.getResult<DependenceAnalysis>(F);
+          }
         }
       }
     }
