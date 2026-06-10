@@ -19,6 +19,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
   // Assumptions:
   // - LA and LB are siblings.
   // - Both loops are in canonical form.
+  // For educational purposes, we are not concerned with how we loop through the analysis.
   bool areLoopsFuseable(Loop *LA, Loop *LB, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI) {
 
     // First pruning: If one loop is guarded while the other is unguarded, then they cannot merge
@@ -161,11 +162,10 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         // Dep acts as a strict dependency checker.
         std::unique_ptr<Dependence> Dep = DI.depends(I0, I1, true);
         // There are no dependencies between the two instructions.
-        if (!Dep){
+        if (!Dep) {
           errs() << "No depencency between instructions\n";
           continue;
         }
-
         // The compiler doesn't understand the dependency and assumes the worst case.
         if (Dep->isConfused())
           return false;
@@ -182,7 +182,6 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           errs() << "Access with non-affine indexes.\n";
           return false;
         }
-
         // The indices must grow identically (example: A[i+1] and A[2 * i] cannot be merged).
         if (AR0->getStepRecurrence(SE) != AR1->getStepRecurrence(SE)) {
           errs() << "Different steps.\n";
@@ -191,20 +190,20 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         // Calculate spatial distance based on starting points: d = Start0 (&A) - Start1 (&A + offset).
         const SCEV *Dist = SE.getMinusSCEV(AR0->getStart(), AR1->getStart());
         const SCEV *Step = AR0->getStepRecurrence(SE);
-
         errs() << "Distance: " << *Dist << "\tStep: " << *Step << "\n";
-
-        // if the step is positive
+        // If the step is positive...
         if (SE.isKnownPositive(Step)) {
-          // if the distance is not non-negative, or cannot be determined at compile time,
-          // then the two loops cannot be merged
-          if (!SE.isKnownNonNegative(Dist)){
+          // ...if the distance is not non-negative, or cannot be determined at compile time,
+          // then the two loops cannot be merged.
+          if (!SE.isKnownNonNegative(Dist)) {
             errs() << "Negative temporal dependence detected (positive step).\n";
             return false;
           }
-        } else if (SE.isKnownNegative(Step)) { // while if the step is negative
-          // if the distance is not negative or zero, then the two loops cannot be merged
-          if (!SE.isKnownNegative(Dist) && !Dist->isZero()){
+        }
+        // ...else if the step is negative...
+        else if (SE.isKnownNegative(Step)) {
+          // ...if the distance is not negative or zero, then the two loops cannot be merged.
+          if (!SE.isKnownNegative(Dist) && !Dist->isZero()) {
             errs() << "Negative temporal dependence detected (negative step).\n";
             return false;
           } 
@@ -218,9 +217,9 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     return true;
   }
 
-
-  // Loop fusion function
-  bool loopFusion(Loop *L0, Loop *L1, ScalarEvolution &SE){
+  // Pre-ordering the loops ensures that we visit them with the same order present in the source code.
+  // For simplicity, we don't include conditional statements in our tests.
+  bool loopFusion(Loop *L0, Loop *L1, ScalarEvolution &SE) {
     // Count the number of phi nodes in the headers. 
     // We expect exactly one phi node (the induction variable) in our simplified canonical loops.
     // If there are more, the loop contains internal recurrences (like a sum reduction)
@@ -231,8 +230,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     for (auto &Phi : L1->getHeader()->phis()) PhiCount1++;
 
     if (PhiCount0 > 1 || PhiCount1 > 1) {
-        errs() << "Error: loops contain multiple phi nodes in header.\n";
-        return false;
+      errs() << "Error: loops contain multiple phi nodes in header.\n";
+      return false;
     }
 
     // Find induction variables of the loop (this correspond to the only phi node in the headers)
@@ -240,11 +239,10 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     PHINode *IV1 = &*L1->getHeader()->phis().begin();
 
     // Ensuring that the loops don't have if-else statements to avoid complications 
-    // during the code motions of the instruction from body 2 to body 1
-    // Since we have loops in simplified form, this is simply guaranteed by having 3 blocks
+    // during the code motions of the instruction from body 2 to body 1.
     if (L0->getBlocks().size() > 3 || L1->getBlocks().size() > 3) {
-        errs() << "Error: loops have more than 3 blocks (if-else statements).\n";
-        return false;
+      errs() << "Error: loops have more than 3 blocks (if-else statements).\n";
+      return false;
     }
 
     // Moving the body of the second loop right after the body of the first loop,
@@ -256,25 +254,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     // We first obtain the relevant blocks:
     BasicBlock *Latch0 = L0->getLoopLatch();
     BasicBlock *Latch1 = L1->getLoopLatch();
-
-    // this should never verify since we only have 3 basic blocks and canonical loops
-    /*
-    if (!Latch0 || !Latch1) {
-        errs() << "Error: loops do not have a single latch.\n";
-        return false;
-    }
-    */
-
     BasicBlock *Body0 = Latch0->getSinglePredecessor();
     BasicBlock *Body1 = Latch1->getSinglePredecessor();
-
-    // this should never verify since we only have 3 basic blocks and canonical loops
-    /*
-    if (!Body0 || !Body1) {
-        errs() << "Error: multiple latch predecessors (internal control flow detected).\n";
-        return false; 
-    }
-    */
 
     // Getting the insert point of where to moving the instruction of the body of the second loop:
     Instruction *InsertPt = Body0->getTerminator();
@@ -288,15 +269,14 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       Instruction &Inst = *iter++;
       if (Inst.isTerminator()) break; 
       if (isa<PHINode>(&Inst) ||
-          &Inst == dyn_cast_or_null<Instruction>(IncValue1)) 
+          &Inst == dyn_cast_or_null<Instruction>(IncValue1)) // In do-while cases
             continue;
       Inst.replaceUsesOfWith(IV1, IV0); // we replace the uses only of the instruction we effectively move
       Inst.moveBefore(InsertPt); // code motion
     }
 
-
     // Replacing uses outside the loops
-    for (auto iter = IV1->use_begin(); iter != IV1->use_end(); ) {
+    for (auto iter = IV1->use_begin(); iter != IV1->use_end();) {
       Use &U = *iter++; // advancing the iterator before it is modified
       Instruction *UserInst = dyn_cast<Instruction>(U.getUser()); 
       if (UserInst && L1->contains(UserInst)) 
@@ -305,14 +285,12 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     }
 
     // Replacing the uses of the incremented variable of the second loop, with the incremented variable of the first
-    if (IncValue0 && IncValue1) {
-      for (auto iter = IncValue1->use_begin(); iter != IncValue1->use_end(); ) {
-        Use &U = *iter++;
-        Instruction *UserInst = dyn_cast<Instruction>(U.getUser());
-        if (UserInst && L1->contains(UserInst)) 
-          continue;
-        U.set(IncValue0);
-      }
+    for (auto iter = IncValue1->use_begin(); iter != IncValue1->use_end();) {
+      Use &U = *iter++;
+      Instruction *UserInst = dyn_cast<Instruction>(U.getUser());
+      if (UserInst && L1->contains(UserInst)) 
+        continue;
+      U.set(IncValue0);
     }
 
     // Changing the exit block of the first loop with the exit block of the second loop
@@ -323,9 +301,9 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
     // If the terminator instruction of the exiting block of L0 is a
     // branch instruction, we cycle on its successor until we find the 
-    // one that jumps on exit0, and we change it to force the jump on exit1
-    if (BranchInst *BI = dyn_cast<BranchInst>(Exiting0->getTerminator())){
-      for (unsigned i = 0; i < BI->getNumSuccessors(); ++i){
+    // one that jumps on exit0, and we change it to force the jump on exit1.
+    if (BranchInst *BI = dyn_cast<BranchInst>(Exiting0->getTerminator())) {
+      for (unsigned i = 0; i < BI->getNumSuccessors(); i++) {
         if (BI->getSuccessor(i) == Exit0)
           BI->setSuccessor(i, Exit1);
       }
@@ -347,11 +325,11 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
     SmallVector<Loop*, 8> Loops(LI.getLoopsInPreorder());
 
-    for (int i = 0; i < Loops.size(); i++) {
+    for (unsigned i = 0; i < Loops.size(); i++) {
       Loop *LA = Loops[i];
       if (!LA->isLoopSimplifyForm())
         continue;
-      for (int j = i + 1; j < Loops.size(); j++) {
+      for (unsigned j = i + 1; j < Loops.size(); j++) {
         Loop *LB = Loops[j];
         if (!LB->isLoopSimplifyForm())
           continue;
@@ -364,10 +342,9 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           LB->getHeader()->printAsOperand(errs(), false);
           errs() << "\n";
 
-          if (loopFusion(LA, LB, SE)){
+          if (loopFusion(LA, LB, SE)) {
             errs() << "Fusion successfully applied!\n"; 
             // here we need to recalculate the analyses if invalidated
-            return PreservedAnalysis::none();
           }
         }
       }
