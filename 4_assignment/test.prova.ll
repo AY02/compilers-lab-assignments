@@ -1,669 +1,336 @@
-; ModuleID = 'test/test.m2r.ll'
-source_filename = "test/test.c"
+; ModuleID = 'test/test.nesting.m2r.ll'
+source_filename = "test/alessio_tests/test_multiple_loops.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_simple(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2) #0 {
+define dso_local void @test_deep_nesting(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2) #0 {
   br label %4
 
-4:                                                ; preds = %16, %3
-  %.01 = phi i32 [ 0, %3 ], [ %17, %16 ]
-  %5 = icmp slt i32 %.01, %2
-  br i1 %5, label %6, label %24
-
-6:                                                ; preds = %4
-  %7 = add nsw i32 %.01, 1
-  %8 = sext i32 %.01 to i64
-  %9 = getelementptr inbounds i32, ptr %0, i64 %8
-  store i32 %7, ptr %9, align 4
-  %10 = sext i32 %.01 to i64
-  %11 = getelementptr inbounds i32, ptr %0, i64 %10
-  %12 = load i32, ptr %11, align 4
-  %13 = add nsw i32 %12, 1
-  %14 = sext i32 %.01 to i64
-  %15 = getelementptr inbounds i32, ptr %1, i64 %14
-  store i32 %13, ptr %15, align 4
-  br label %16
-
-16:                                               ; preds = %6
-  %17 = add nsw i32 %.01, 1
-  br label %4, !llvm.loop !6
-
-18:                                               ; No predecessors!
-  br label %19
-
-19:                                               ; preds = %22, %18
-  %.0 = phi i32 [ 0, %18 ], [ %23, %22 ]
-  %20 = icmp slt i32 %.0, %2
-  br i1 %20, label %21, label %24
-
-21:                                               ; preds = %19
-  br label %22
-
-22:                                               ; preds = %21
-  %23 = add nsw i32 %.0, 1
-  br label %19, !llvm.loop !8
-
-24:                                               ; preds = %4, %19
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_simple_unrelated_base(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2) #0 {
-  br label %4
-
-4:                                                ; preds = %16, %3
-  %.01 = phi i32 [ 0, %3 ], [ %17, %16 ]
-  %5 = icmp slt i32 %.01, %2
-  br i1 %5, label %6, label %24
-
-6:                                                ; preds = %4
-  %7 = add nsw i32 %.01, 1
-  %8 = sext i32 %.01 to i64
-  %9 = getelementptr inbounds i32, ptr %0, i64 %8
-  store i32 %7, ptr %9, align 4
-  %10 = sext i32 %.01 to i64
-  %11 = getelementptr inbounds i32, ptr %1, i64 %10
-  %12 = load i32, ptr %11, align 4
-  %13 = add nsw i32 %12, 1
-  %14 = sext i32 %.01 to i64
-  %15 = getelementptr inbounds i32, ptr %1, i64 %14
-  store i32 %13, ptr %15, align 4
-  br label %16
-
-16:                                               ; preds = %6
-  %17 = add nsw i32 %.01, 1
-  br label %4, !llvm.loop !9
-
-18:                                               ; No predecessors!
-  br label %19
-
-19:                                               ; preds = %22, %18
-  %.0 = phi i32 [ 0, %18 ], [ %23, %22 ]
-  %20 = icmp slt i32 %.0, %2
-  br i1 %20, label %21, label %24
-
-21:                                               ; preds = %19
-  br label %22
-
-22:                                               ; preds = %21
-  %23 = add nsw i32 %.0, 1
-  br label %19, !llvm.loop !10
-
-24:                                               ; preds = %4, %19
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_negative_step_loop(ptr noalias noundef %0, ptr noalias noundef %1) #0 {
-  br label %3
-
-3:                                                ; preds = %13, %2
-  %.01 = phi i32 [ 100, %2 ], [ %14, %13 ]
-  %4 = icmp sgt i32 %.01, 0
-  br i1 %4, label %5, label %21
-
-5:                                                ; preds = %3
-  %6 = sext i32 %.01 to i64
-  %7 = getelementptr inbounds i32, ptr %0, i64 %6
-  store i32 1, ptr %7, align 4
-  %8 = sext i32 %.01 to i64
-  %9 = getelementptr inbounds i32, ptr %0, i64 %8
-  %10 = load i32, ptr %9, align 4
-  %11 = sext i32 %.01 to i64
-  %12 = getelementptr inbounds i32, ptr %1, i64 %11
-  store i32 %10, ptr %12, align 4
-  br label %13
-
-13:                                               ; preds = %5
-  %14 = add nsw i32 %.01, -1
-  br label %3, !llvm.loop !11
-
-15:                                               ; No predecessors!
-  br label %16
-
-16:                                               ; preds = %19, %15
-  %.0 = phi i32 [ 100, %15 ], [ %20, %19 ]
-  %17 = icmp sgt i32 %.0, 0
-  br i1 %17, label %18, label %21
-
-18:                                               ; preds = %16
-  br label %19
-
-19:                                               ; preds = %18
-  %20 = add nsw i32 %.0, -1
-  br label %16, !llvm.loop !12
-
-21:                                               ; preds = %3, %16
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_negative_dependence(ptr noalias noundef %0, ptr noalias noundef %1) #0 {
-  br label %3
-
-3:                                                ; preds = %8, %2
-  %.01 = phi i32 [ 0, %2 ], [ %9, %8 ]
-  %4 = icmp slt i32 %.01, 100
-  br i1 %4, label %5, label %10
-
-5:                                                ; preds = %3
-  %6 = sext i32 %.01 to i64
-  %7 = getelementptr inbounds i32, ptr %0, i64 %6
-  store i32 10, ptr %7, align 4
-  br label %8
-
-8:                                                ; preds = %5
-  %9 = add nsw i32 %.01, 1
-  br label %3, !llvm.loop !13
-
-10:                                               ; preds = %3
-  br label %11
-
-11:                                               ; preds = %20, %10
-  %.0 = phi i32 [ 0, %10 ], [ %21, %20 ]
-  %12 = icmp slt i32 %.0, 100
-  br i1 %12, label %13, label %22
-
-13:                                               ; preds = %11
-  %14 = add nsw i32 %.0, 2
-  %15 = sext i32 %14 to i64
-  %16 = getelementptr inbounds i32, ptr %0, i64 %15
-  %17 = load i32, ptr %16, align 4
-  %18 = sext i32 %.0 to i64
-  %19 = getelementptr inbounds i32, ptr %1, i64 %18
-  store i32 %17, ptr %19, align 4
-  br label %20
-
-20:                                               ; preds = %13
-  %21 = add nsw i32 %.0, 1
-  br label %11, !llvm.loop !14
-
-22:                                               ; preds = %11
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_negative_dependece_2(ptr noalias noundef %0, ptr noalias noundef %1) #0 {
-  br label %3
-
-3:                                                ; preds = %8, %2
-  %.01 = phi i32 [ 100, %2 ], [ %9, %8 ]
-  %4 = icmp sgt i32 %.01, 0
-  br i1 %4, label %5, label %10
-
-5:                                                ; preds = %3
-  %6 = sext i32 %.01 to i64
-  %7 = getelementptr inbounds i32, ptr %0, i64 %6
-  store i32 1, ptr %7, align 4
-  br label %8
-
-8:                                                ; preds = %5
-  %9 = add nsw i32 %.01, -1
-  br label %3, !llvm.loop !15
-
-10:                                               ; preds = %3
-  br label %11
-
-11:                                               ; preds = %20, %10
-  %.0 = phi i32 [ 100, %10 ], [ %21, %20 ]
-  %12 = icmp sgt i32 %.0, 0
-  br i1 %12, label %13, label %22
-
-13:                                               ; preds = %11
-  %14 = sub nsw i32 %.0, 1
-  %15 = sext i32 %14 to i64
-  %16 = getelementptr inbounds i32, ptr %0, i64 %15
-  %17 = load i32, ptr %16, align 4
-  %18 = sext i32 %.0 to i64
-  %19 = getelementptr inbounds i32, ptr %1, i64 %18
-  store i32 %17, ptr %19, align 4
-  br label %20
-
-20:                                               ; preds = %13
-  %21 = add nsw i32 %.0, -1
-  br label %11, !llvm.loop !16
-
-22:                                               ; preds = %11
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_positive_dependence(ptr noalias noundef %0, ptr noalias noundef %1) #0 {
-  br label %3
-
-3:                                                ; preds = %14, %2
-  %.01 = phi i32 [ 0, %2 ], [ %15, %14 ]
-  %4 = icmp slt i32 %.01, 100
-  br i1 %4, label %5, label %22
-
-5:                                                ; preds = %3
-  %6 = add nsw i32 %.01, 2
-  %7 = sext i32 %6 to i64
-  %8 = getelementptr inbounds i32, ptr %0, i64 %7
-  store i32 10, ptr %8, align 4
-  %9 = sext i32 %.01 to i64
-  %10 = getelementptr inbounds i32, ptr %0, i64 %9
-  %11 = load i32, ptr %10, align 4
-  %12 = sext i32 %.01 to i64
-  %13 = getelementptr inbounds i32, ptr %1, i64 %12
-  store i32 %11, ptr %13, align 4
-  br label %14
-
-14:                                               ; preds = %5
-  %15 = add nsw i32 %.01, 1
-  br label %3, !llvm.loop !17
-
-16:                                               ; No predecessors!
-  br label %17
-
-17:                                               ; preds = %20, %16
-  %.0 = phi i32 [ 0, %16 ], [ %21, %20 ]
-  %18 = icmp slt i32 %.0, 100
-  br i1 %18, label %19, label %22
-
-19:                                               ; preds = %17
-  br label %20
-
-20:                                               ; preds = %19
-  %21 = add nsw i32 %.0, 1
-  br label %17, !llvm.loop !18
-
-22:                                               ; preds = %3, %17
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_different_trip_count(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2, i32 noundef %3) #0 {
-  br label %5
-
-5:                                                ; preds = %10, %4
-  %.01 = phi i32 [ 0, %4 ], [ %11, %10 ]
-  %6 = icmp slt i32 %.01, %2
-  br i1 %6, label %7, label %12
-
-7:                                                ; preds = %5
-  %8 = sext i32 %.01 to i64
-  %9 = getelementptr inbounds i32, ptr %0, i64 %8
-  store i32 1, ptr %9, align 4
-  br label %10
-
-10:                                               ; preds = %7
-  %11 = add nsw i32 %.01, 1
-  br label %5, !llvm.loop !19
-
-12:                                               ; preds = %5
-  br label %13
-
-13:                                               ; preds = %18, %12
-  %.0 = phi i32 [ 0, %12 ], [ %19, %18 ]
-  %14 = icmp slt i32 %.0, %3
-  br i1 %14, label %15, label %20
-
-15:                                               ; preds = %13
-  %16 = sext i32 %.0 to i64
-  %17 = getelementptr inbounds i32, ptr %1, i64 %16
-  store i32 2, ptr %17, align 4
-  br label %18
-
-18:                                               ; preds = %15
-  %19 = add nsw i32 %.0, 1
-  br label %13, !llvm.loop !20
-
-20:                                               ; preds = %13
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_interleaved_code(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2) #0 {
-  br label %4
-
-4:                                                ; preds = %9, %3
-  %.01 = phi i32 [ 0, %3 ], [ %10, %9 ]
-  %5 = icmp slt i32 %.01, 100
-  br i1 %5, label %6, label %11
-
-6:                                                ; preds = %4
-  %7 = sext i32 %.01 to i64
-  %8 = getelementptr inbounds i32, ptr %0, i64 %7
-  store i32 1, ptr %8, align 4
-  br label %9
-
-9:                                                ; preds = %6
-  %10 = add nsw i32 %.01, 1
-  br label %4, !llvm.loop !21
-
-11:                                               ; preds = %4
-  %12 = getelementptr inbounds i32, ptr %0, i64 0
-  store i32 %2, ptr %12, align 4
-  br label %13
-
-13:                                               ; preds = %18, %11
-  %.0 = phi i32 [ 0, %11 ], [ %19, %18 ]
-  %14 = icmp slt i32 %.0, 100
-  br i1 %14, label %15, label %20
-
-15:                                               ; preds = %13
-  %16 = sext i32 %.0 to i64
-  %17 = getelementptr inbounds i32, ptr %1, i64 %16
-  store i32 2, ptr %17, align 4
-  br label %18
-
-18:                                               ; preds = %15
-  %19 = add nsw i32 %.0, 1
-  br label %13, !llvm.loop !22
-
-20:                                               ; preds = %13
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_different_step(ptr noalias noundef %0, ptr noalias noundef %1) #0 {
-  br label %3
-
-3:                                                ; preds = %8, %2
-  %.01 = phi i32 [ 0, %2 ], [ %9, %8 ]
-  %4 = icmp slt i32 %.01, 100
-  br i1 %4, label %5, label %10
-
-5:                                                ; preds = %3
-  %6 = sext i32 %.01 to i64
-  %7 = getelementptr inbounds i32, ptr %0, i64 %6
-  store i32 1, ptr %7, align 4
-  br label %8
-
-8:                                                ; preds = %5
-  %9 = add nsw i32 %.01, 1
-  br label %3, !llvm.loop !23
-
-10:                                               ; preds = %3
-  br label %11
-
-11:                                               ; preds = %17, %10
-  %.0 = phi i32 [ 0, %10 ], [ %18, %17 ]
-  %12 = icmp slt i32 %.0, 100
-  br i1 %12, label %13, label %19
-
-13:                                               ; preds = %11
-  %14 = mul nsw i32 %.0, 2
-  %15 = sext i32 %14 to i64
-  %16 = getelementptr inbounds i32, ptr %0, i64 %15
-  store i32 2, ptr %16, align 4
-  br label %17
-
-17:                                               ; preds = %13
-  %18 = add nsw i32 %.0, 1
-  br label %11, !llvm.loop !24
-
-19:                                               ; preds = %11
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_read_after_read(ptr noalias noundef %0, ptr noalias noundef %1, ptr noalias noundef %2) #0 {
-  br label %4
-
-4:                                                ; preds = %18, %3
-  %.01 = phi i32 [ 0, %3 ], [ %19, %18 ]
-  %5 = icmp slt i32 %.01, 100
-  br i1 %5, label %6, label %26
-
-6:                                                ; preds = %4
-  %7 = sext i32 %.01 to i64
-  %8 = getelementptr inbounds i32, ptr %0, i64 %7
-  %9 = load i32, ptr %8, align 4
-  %10 = sext i32 %.01 to i64
-  %11 = getelementptr inbounds i32, ptr %1, i64 %10
-  store i32 %9, ptr %11, align 4
-  %12 = add nsw i32 %.01, 2
-  %13 = sext i32 %12 to i64
-  %14 = getelementptr inbounds i32, ptr %0, i64 %13
-  %15 = load i32, ptr %14, align 4
-  %16 = sext i32 %.01 to i64
-  %17 = getelementptr inbounds i32, ptr %2, i64 %16
-  store i32 %15, ptr %17, align 4
-  br label %18
-
-18:                                               ; preds = %6
-  %19 = add nsw i32 %.01, 1
-  br label %4, !llvm.loop !25
-
-20:                                               ; No predecessors!
-  br label %21
-
-21:                                               ; preds = %24, %20
-  %.0 = phi i32 [ 0, %20 ], [ %25, %24 ]
-  %22 = icmp slt i32 %.0, 100
-  br i1 %22, label %23, label %26
-
-23:                                               ; preds = %21
-  br label %24
-
-24:                                               ; preds = %23
-  %25 = add nsw i32 %.0, 1
-  br label %21, !llvm.loop !26
-
-26:                                               ; preds = %4, %21
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_non_affine_access(ptr noalias noundef %0, ptr noalias noundef %1, ptr noalias noundef %2) #0 {
-  br label %4
-
-4:                                                ; preds = %12, %3
-  %.01 = phi i32 [ 0, %3 ], [ %13, %12 ]
-  %5 = icmp slt i32 %.01, 100
-  br i1 %5, label %6, label %14
-
-6:                                                ; preds = %4
-  %7 = sext i32 %.01 to i64
-  %8 = getelementptr inbounds i32, ptr %2, i64 %7
-  %9 = load i32, ptr %8, align 4
-  %10 = sext i32 %9 to i64
-  %11 = getelementptr inbounds i32, ptr %0, i64 %10
-  store i32 1, ptr %11, align 4
-  br label %12
-
-12:                                               ; preds = %6
-  %13 = add nsw i32 %.01, 1
-  br label %4, !llvm.loop !27
-
-14:                                               ; preds = %4
-  br label %15
-
-15:                                               ; preds = %23, %14
-  %.0 = phi i32 [ 0, %14 ], [ %24, %23 ]
-  %16 = icmp slt i32 %.0, 100
-  br i1 %16, label %17, label %25
-
-17:                                               ; preds = %15
-  %18 = sext i32 %.0 to i64
-  %19 = getelementptr inbounds i32, ptr %0, i64 %18
-  %20 = load i32, ptr %19, align 4
-  %21 = sext i32 %.0 to i64
-  %22 = getelementptr inbounds i32, ptr %1, i64 %21
-  store i32 %20, ptr %22, align 4
-  br label %23
-
-23:                                               ; preds = %17
-  %24 = add nsw i32 %.0, 1
-  br label %15, !llvm.loop !28
-
-25:                                               ; preds = %15
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_same_guard(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2) #0 {
-  %4 = icmp sgt i32 %2, 0
-  br i1 %4, label %5, label %15
-
-5:                                                ; preds = %3
-  br label %6
-
-6:                                                ; preds = %12, %5
-  %.01 = phi i32 [ 0, %5 ], [ %9, %12 ]
-  %7 = sext i32 %.01 to i64
-  %8 = getelementptr inbounds i32, ptr %0, i64 %7
-  store i32 1, ptr %8, align 4
-  %9 = add nsw i32 %.01, 1
-  %10 = sext i32 %.01 to i64
-  %11 = getelementptr inbounds i32, ptr %1, i64 %10
-  store i32 2, ptr %11, align 4
-  br label %12
-
-12:                                               ; preds = %6
-  %13 = icmp slt i32 %9, %2
-  br i1 %13, label %6, label %22, !llvm.loop !29
-
-14:                                               ; No predecessors!
-  br label %15
-
-15:                                               ; preds = %14, %3
-  %16 = icmp sgt i32 %2, 0
-  br i1 %16, label %17, label %23
-
-17:                                               ; preds = %15
-  br label %18
-
-18:                                               ; preds = %20, %17
-  %.0 = phi i32 [ 0, %17 ], [ %19, %20 ]
-  %19 = add nsw i32 %.0, 1
-  br label %20
-
-20:                                               ; preds = %18
-  %21 = icmp slt i32 %19, %2
-  br i1 %21, label %18, label %22, !llvm.loop !30
-
-22:                                               ; preds = %12, %20
-  br label %23
-
-23:                                               ; preds = %22, %15
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_different_guards(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2, i32 noundef %3) #0 {
-  %5 = icmp sgt i32 %2, 0
-  br i1 %5, label %6, label %14
+4:                                                ; preds = %107, %3
+  %.03 = phi i32 [ 0, %3 ], [ %108, %107 ]
+  %5 = icmp slt i32 %.03, %2
+  br i1 %5, label %6, label %109
 
 6:                                                ; preds = %4
   br label %7
 
-7:                                                ; preds = %11, %6
-  %.01 = phi i32 [ 0, %6 ], [ %10, %11 ]
-  %8 = sext i32 %.01 to i64
-  %9 = getelementptr inbounds i32, ptr %0, i64 %8
-  store i32 1, ptr %9, align 4
-  %10 = add nsw i32 %.01, 1
-  br label %11
+7:                                                ; preds = %54, %6
+  %.04 = phi i32 [ 0, %6 ], [ %55, %54 ]
+  %8 = icmp slt i32 %.04, %2
+  br i1 %8, label %9, label %56
 
-11:                                               ; preds = %7
-  %12 = icmp slt i32 %10, %2
-  br i1 %12, label %7, label %13, !llvm.loop !31
-
-13:                                               ; preds = %11
-  br label %14
-
-14:                                               ; preds = %13, %4
-  %15 = icmp sgt i32 %3, 0
-  br i1 %15, label %16, label %24
-
-16:                                               ; preds = %14
-  br label %17
-
-17:                                               ; preds = %21, %16
-  %.0 = phi i32 [ 0, %16 ], [ %20, %21 ]
-  %18 = sext i32 %.0 to i64
-  %19 = getelementptr inbounds i32, ptr %1, i64 %18
-  store i32 2, ptr %19, align 4
-  %20 = add nsw i32 %.0, 1
-  br label %21
-
-21:                                               ; preds = %17
-  %22 = icmp slt i32 %20, %3
-  br i1 %22, label %17, label %23, !llvm.loop !32
-
-23:                                               ; preds = %21
-  br label %24
-
-24:                                               ; preds = %23, %14
-  ret void
-}
-
-; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_IV1_use_outside_loops(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2) #0 {
-  br label %4
-
-4:                                                ; preds = %10, %3
-  %.01 = phi i32 [ 0, %3 ], [ %7, %10 ]
-  %5 = sext i32 %.01 to i64
-  %6 = getelementptr inbounds i32, ptr %0, i64 %5
-  store i32 1, ptr %6, align 4
-  %7 = add nsw i32 %.01, 1
-  %8 = sext i32 %.01 to i64
-  %9 = getelementptr inbounds i32, ptr %1, i64 %8
-  store i32 2, ptr %9, align 4
+9:                                                ; preds = %7
   br label %10
 
-10:                                               ; preds = %4
-  %11 = icmp slt i32 %7, %2
-  br i1 %11, label %4, label %17, !llvm.loop !33
+10:                                               ; preds = %29, %9
+  %.05 = phi i32 [ 0, %9 ], [ %30, %29 ]
+  %11 = icmp slt i32 %.05, %2
+  br i1 %11, label %12, label %31
 
-12:                                               ; No predecessors!
+12:                                               ; preds = %10
   br label %13
 
-13:                                               ; preds = %15, %12
-  %.0 = phi i32 [ 0, %12 ], [ %14, %15 ]
-  %14 = add nsw i32 %.0, 1
-  br label %15
+13:                                               ; preds = %20, %12
+  %.06 = phi i32 [ 0, %12 ], [ %21, %20 ]
+  %14 = icmp slt i32 %.06, %2
+  br i1 %14, label %15, label %28
 
 15:                                               ; preds = %13
-  %16 = icmp slt i32 %14, %2
-  br i1 %16, label %13, label %17, !llvm.loop !34
+  %16 = sext i32 %.06 to i64
+  %17 = getelementptr inbounds i32, ptr %0, i64 %16
+  store i32 8, ptr %17, align 4
+  %18 = sext i32 %.06 to i64
+  %19 = getelementptr inbounds i32, ptr %1, i64 %18
+  store i32 9, ptr %19, align 4
+  br label %20
 
-17:                                               ; preds = %10, %15
-  %18 = add nsw i32 %7, 5
-  %19 = add nsw i32 %7, 1
+20:                                               ; preds = %15
+  %21 = add nsw i32 %.06, 1
+  br label %13, !llvm.loop !6
+
+22:                                               ; No predecessors!
+  br label %23
+
+23:                                               ; preds = %26, %22
+  %.07 = phi i32 [ 0, %22 ], [ %27, %26 ]
+  %24 = icmp slt i32 %.07, %2
+  br i1 %24, label %25, label %28
+
+25:                                               ; preds = %23
+  br label %26
+
+26:                                               ; preds = %25
+  %27 = add nsw i32 %.07, 1
+  br label %23, !llvm.loop !8
+
+28:                                               ; preds = %13, %23
+  br label %29
+
+29:                                               ; preds = %28
+  %30 = add nsw i32 %.05, 1
+  br label %10, !llvm.loop !9
+
+31:                                               ; preds = %10
+  br label %32
+
+32:                                               ; preds = %51, %31
+  %.08 = phi i32 [ 0, %31 ], [ %52, %51 ]
+  %33 = icmp slt i32 %.08, %2
+  br i1 %33, label %34, label %53
+
+34:                                               ; preds = %32
+  br label %35
+
+35:                                               ; preds = %42, %34
+  %.09 = phi i32 [ 0, %34 ], [ %43, %42 ]
+  %36 = icmp slt i32 %.09, %2
+  br i1 %36, label %37, label %50
+
+37:                                               ; preds = %35
+  %38 = sext i32 %.09 to i64
+  %39 = getelementptr inbounds i32, ptr %0, i64 %38
+  store i32 10, ptr %39, align 4
+  %40 = sext i32 %.09 to i64
+  %41 = getelementptr inbounds i32, ptr %1, i64 %40
+  store i32 11, ptr %41, align 4
+  br label %42
+
+42:                                               ; preds = %37
+  %43 = add nsw i32 %.09, 1
+  br label %35, !llvm.loop !10
+
+44:                                               ; No predecessors!
+  br label %45
+
+45:                                               ; preds = %48, %44
+  %.010 = phi i32 [ 0, %44 ], [ %49, %48 ]
+  %46 = icmp slt i32 %.010, %2
+  br i1 %46, label %47, label %50
+
+47:                                               ; preds = %45
+  br label %48
+
+48:                                               ; preds = %47
+  %49 = add nsw i32 %.010, 1
+  br label %45, !llvm.loop !11
+
+50:                                               ; preds = %35, %45
+  br label %51
+
+51:                                               ; preds = %50
+  %52 = add nsw i32 %.08, 1
+  br label %32, !llvm.loop !12
+
+53:                                               ; preds = %32
+  br label %54
+
+54:                                               ; preds = %53
+  %55 = add nsw i32 %.04, 1
+  br label %7, !llvm.loop !13
+
+56:                                               ; preds = %7
+  br label %57
+
+57:                                               ; preds = %104, %56
+  %.011 = phi i32 [ 0, %56 ], [ %105, %104 ]
+  %58 = icmp slt i32 %.011, %2
+  br i1 %58, label %59, label %106
+
+59:                                               ; preds = %57
+  br label %60
+
+60:                                               ; preds = %79, %59
+  %.012 = phi i32 [ 0, %59 ], [ %80, %79 ]
+  %61 = icmp slt i32 %.012, %2
+  br i1 %61, label %62, label %81
+
+62:                                               ; preds = %60
+  br label %63
+
+63:                                               ; preds = %70, %62
+  %.013 = phi i32 [ 0, %62 ], [ %71, %70 ]
+  %64 = icmp slt i32 %.013, %2
+  br i1 %64, label %65, label %78
+
+65:                                               ; preds = %63
+  %66 = sext i32 %.013 to i64
+  %67 = getelementptr inbounds i32, ptr %0, i64 %66
+  store i32 12, ptr %67, align 4
+  %68 = sext i32 %.013 to i64
+  %69 = getelementptr inbounds i32, ptr %1, i64 %68
+  store i32 13, ptr %69, align 4
+  br label %70
+
+70:                                               ; preds = %65
+  %71 = add nsw i32 %.013, 1
+  br label %63, !llvm.loop !14
+
+72:                                               ; No predecessors!
+  br label %73
+
+73:                                               ; preds = %76, %72
+  %.014 = phi i32 [ 0, %72 ], [ %77, %76 ]
+  %74 = icmp slt i32 %.014, %2
+  br i1 %74, label %75, label %78
+
+75:                                               ; preds = %73
+  br label %76
+
+76:                                               ; preds = %75
+  %77 = add nsw i32 %.014, 1
+  br label %73, !llvm.loop !15
+
+78:                                               ; preds = %63, %73
+  br label %79
+
+79:                                               ; preds = %78
+  %80 = add nsw i32 %.012, 1
+  br label %60, !llvm.loop !16
+
+81:                                               ; preds = %60
+  br label %82
+
+82:                                               ; preds = %101, %81
+  %.02 = phi i32 [ 0, %81 ], [ %102, %101 ]
+  %83 = icmp slt i32 %.02, %2
+  br i1 %83, label %84, label %103
+
+84:                                               ; preds = %82
+  br label %85
+
+85:                                               ; preds = %92, %84
+  %.01 = phi i32 [ 0, %84 ], [ %93, %92 ]
+  %86 = icmp slt i32 %.01, %2
+  br i1 %86, label %87, label %100
+
+87:                                               ; preds = %85
+  %88 = sext i32 %.01 to i64
+  %89 = getelementptr inbounds i32, ptr %0, i64 %88
+  store i32 14, ptr %89, align 4
+  %90 = sext i32 %.01 to i64
+  %91 = getelementptr inbounds i32, ptr %1, i64 %90
+  store i32 15, ptr %91, align 4
+  br label %92
+
+92:                                               ; preds = %87
+  %93 = add nsw i32 %.01, 1
+  br label %85, !llvm.loop !17
+
+94:                                               ; No predecessors!
+  br label %95
+
+95:                                               ; preds = %98, %94
+  %.0 = phi i32 [ 0, %94 ], [ %99, %98 ]
+  %96 = icmp slt i32 %.0, %2
+  br i1 %96, label %97, label %100
+
+97:                                               ; preds = %95
+  br label %98
+
+98:                                               ; preds = %97
+  %99 = add nsw i32 %.0, 1
+  br label %95, !llvm.loop !18
+
+100:                                              ; preds = %85, %95
+  br label %101
+
+101:                                              ; preds = %100
+  %102 = add nsw i32 %.02, 1
+  br label %82, !llvm.loop !19
+
+103:                                              ; preds = %82
+  br label %104
+
+104:                                              ; preds = %103
+  %105 = add nsw i32 %.011, 1
+  br label %57, !llvm.loop !20
+
+106:                                              ; preds = %57
+  br label %107
+
+107:                                              ; preds = %106
+  %108 = add nsw i32 %.03, 1
+  br label %4, !llvm.loop !21
+
+109:                                              ; preds = %4
   ret void
 }
 
 ; Function Attrs: noinline nounwind uwtable
-define dso_local void @test_IV1_use_outside_loops_2(ptr noalias noundef %0, ptr noalias noundef %1, i32 noundef %2) #0 {
-  br label %4
+define dso_local void @test_four_siblings(ptr noalias noundef %0, ptr noalias noundef %1, ptr noalias noundef %2, ptr noalias noundef %3, i32 noundef %4) #0 {
+  br label %6
 
-4:                                                ; preds = %7, %3
-  %.01 = phi i32 [ 0, %3 ], [ %10, %7 ]
-  %5 = icmp slt i32 %.01, %2
-  %6 = icmp slt i32 %.01, %2
-  br i1 %5, label %7, label %17
+6:                                                ; preds = %17, %5
+  %.03 = phi i32 [ 0, %5 ], [ %18, %17 ]
+  %7 = icmp slt i32 %.03, %4
+  br i1 %7, label %8, label %37
 
-7:                                                ; preds = %4
-  %8 = sext i32 %.01 to i64
-  %9 = getelementptr inbounds i32, ptr %0, i64 %8
-  store i32 1, ptr %9, align 4
-  %10 = add nsw i32 %.01, 1
-  br label %4, !llvm.loop !35
+8:                                                ; preds = %6
+  %9 = sext i32 %.03 to i64
+  %10 = getelementptr inbounds i32, ptr %0, i64 %9
+  store i32 1, ptr %10, align 4
+  %11 = sext i32 %.03 to i64
+  %12 = getelementptr inbounds i32, ptr %1, i64 %11
+  store i32 2, ptr %12, align 4
+  %13 = sext i32 %.03 to i64
+  %14 = getelementptr inbounds i32, ptr %2, i64 %13
+  store i32 3, ptr %14, align 4
+  %15 = sext i32 %.03 to i64
+  %16 = getelementptr inbounds i32, ptr %3, i64 %15
+  store i32 4, ptr %16, align 4
+  br label %17
 
-11:                                               ; No predecessors!
-  br label %12
+17:                                               ; preds = %8
+  %18 = add nsw i32 %.03, 1
+  br label %6, !llvm.loop !22
 
-12:                                               ; preds = %13, %11
-  %.0 = phi i32 [ 0, %11 ], [ %16, %13 ]
-  br i1 %6, label %13, label %17
+19:                                               ; No predecessors!
+  br label %20
 
-13:                                               ; preds = %12
-  %14 = sext i32 %.0 to i64
-  %15 = getelementptr inbounds i32, ptr %1, i64 %14
-  store i32 2, ptr %15, align 4
-  %16 = add nsw i32 %.0, 1
-  br label %12, !llvm.loop !36
+20:                                               ; preds = %23, %19
+  %.02 = phi i32 [ 0, %19 ], [ %24, %23 ]
+  %21 = icmp slt i32 %.02, %4
+  br i1 %21, label %22, label %25
 
-17:                                               ; preds = %4, %12
-  %18 = add nsw i32 %.01, 5
-  %19 = add nsw i32 %.01, 1
+22:                                               ; preds = %20
+  br label %23
+
+23:                                               ; preds = %22
+  %24 = add nsw i32 %.02, 1
+  br label %20, !llvm.loop !23
+
+25:                                               ; preds = %20
+  br label %26
+
+26:                                               ; preds = %29, %25
+  %.01 = phi i32 [ 0, %25 ], [ %30, %29 ]
+  %27 = icmp slt i32 %.01, %4
+  br i1 %27, label %28, label %31
+
+28:                                               ; preds = %26
+  br label %29
+
+29:                                               ; preds = %28
+  %30 = add nsw i32 %.01, 1
+  br label %26, !llvm.loop !24
+
+31:                                               ; preds = %26
+  br label %32
+
+32:                                               ; preds = %35, %31
+  %.0 = phi i32 [ 0, %31 ], [ %36, %35 ]
+  %33 = icmp slt i32 %.0, %4
+  br i1 %33, label %34, label %37
+
+34:                                               ; preds = %32
+  br label %35
+
+35:                                               ; preds = %34
+  %36 = add nsw i32 %.0, 1
+  br label %32, !llvm.loop !25
+
+37:                                               ; preds = %6, %32
   ret void
 }
 
@@ -698,14 +365,3 @@ attributes #0 = { noinline nounwind uwtable "frame-pointer"="all" "min-legal-vec
 !23 = distinct !{!23, !7}
 !24 = distinct !{!24, !7}
 !25 = distinct !{!25, !7}
-!26 = distinct !{!26, !7}
-!27 = distinct !{!27, !7}
-!28 = distinct !{!28, !7}
-!29 = distinct !{!29, !7}
-!30 = distinct !{!30, !7}
-!31 = distinct !{!31, !7}
-!32 = distinct !{!32, !7}
-!33 = distinct !{!33, !7}
-!34 = distinct !{!34, !7}
-!35 = distinct !{!35, !7}
-!36 = distinct !{!36, !7}

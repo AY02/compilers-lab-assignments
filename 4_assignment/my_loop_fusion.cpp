@@ -319,13 +319,13 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
     errs() << "Starting analysis for " << F.getName() << "...\n";
 
-    LoopInfo &LI = FAM.getResult<LoopAnalysis>(F);
-    DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
-    PostDominatorTree &PDT = FAM.getResult<PostDominatorTreeAnalysis>(F);
-    ScalarEvolution &SE = FAM.getResult<ScalarEvolutionAnalysis>(F);
-    DependenceInfo &DI = FAM.getResult<DependenceAnalysis>(F);
+    LoopInfo *LI = &FAM.getResult<LoopAnalysis>(F);
+    DominatorTree *DT = &FAM.getResult<DominatorTreeAnalysis>(F);
+    PostDominatorTree *PDT = &FAM.getResult<PostDominatorTreeAnalysis>(F);
+    ScalarEvolution *SE = &FAM.getResult<ScalarEvolutionAnalysis>(F);
+    DependenceInfo *DI = &FAM.getResult<DependenceAnalysis>(F);
 
-    SmallVector<Loop*, 8> Loops(LI.getLoopsInPreorder());
+    SmallVector<Loop*, 8> Loops(LI->getLoopsInPreorder());
 
     for (unsigned i = 0; i < Loops.size(); i++) {
       Loop *LA = Loops[i];
@@ -337,23 +337,24 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           continue;
         if (LA->getParentLoop() != LB->getParentLoop())
           continue;
-        if (areLoopsFuseable(LA, LB, DT, PDT, SE, DI)) {
+        if (areLoopsFuseable(LA, LB, *DT, *PDT, *SE, *DI)) {
           errs() << "Suitable for Loop Fusion: ";
           LA->getHeader()->printAsOperand(errs(), false);
           errs() << " and ";
           LB->getHeader()->printAsOperand(errs(), false);
           errs() << "\n";
-          if (loopFusion(LA, LB, SE)) {
+          if (loopFusion(LA, LB, *SE)) {
             errs() << "Fusion successfully applied!\n";
             Loops[j] = nullptr;
             changed = true;
             // here we need to recalculate the analyses if invalidated
-            FAM.invalidate(F, PreservedAnalyses::none());
-            LI = FAM.getResult<LoopAnalysis>(F);
-            DT = FAM.getResult<DominatorTreeAnalysis>(F);
-            PDT = FAM.getResult<PostDominatorTreeAnalysis>(F);
-            SE = FAM.getResult<ScalarEvolutionAnalysis>(F);
-            DI = FAM.getResult<DependenceAnalysis>(F);
+            PreservedAnalyses PA;
+            PA.preserve<LoopAnalysis>(); 
+            FAM.invalidate(F, PA);
+            DT = &FAM.getResult<DominatorTreeAnalysis>(F);
+            PDT = &FAM.getResult<PostDominatorTreeAnalysis>(F);
+            SE = &FAM.getResult<ScalarEvolutionAnalysis>(F);
+            DI = &FAM.getResult<DependenceAnalysis>(F);
           }
         }
       }
