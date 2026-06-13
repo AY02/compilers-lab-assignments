@@ -1,0 +1,59 @@
+        // The sign of the dependence depends on the sign of the step:
+        // - If the step is positive, then there must be no negative dependencies
+        // - If the step is negative, then there must be no positive dependencies
+        // Memory access must be expressed in the following form:
+        // - S0(i) = Start + i * Step
+        // - S0(i) = {Start, +, Step}
+        const SCEV *Step = nullptr;
+        if (const SCEVAddRecExpr *AR0 = dyn_cast<SCEVAddRecExpr>(S0)) {
+          Step = AR0->getStepRecurrence(SE);
+          errs() << "Step: " << *Step << "\n";
+        }
+        else {
+          // Constant access (e.g., A[const]).
+          // Access with complex indices (e.g., A[B[i]]).
+          errs() << "Memory access is not an additive recurrence.\n";
+        }
+        // If the step cannot be calculated...
+        if (!Step) {
+          // ...if the distance is negative, then the two loops cannot be merged.
+          if (SE.isKnownNegative(Dist)) {
+            errs() << "Negative dependence detected (constant access).\n";
+            return false;
+          }
+          // ...if the distance cannot be determined at compile time, then the two loops cannot be merged.
+          else if (!SE.isKnownNonNegative(Dist)) {
+            errs() << "Distance cannot be statically proven non-negative (constant access).\n";
+            return false;
+          }
+        }
+        // If the step is positive...
+        else if (SE.isKnownPositive(Step)) {
+          // ...if the distance is negative, then the two loops cannot be merged.
+          if (SE.isKnownNegative(Dist)) {
+            errs() << "Negative dependence detected (positive step).\n";
+            return false;
+          }
+          // ...if the distance cannot be determined at compile time, then the two loops cannot be merged.
+          else if (!SE.isKnownNonNegative(Dist)) {
+            errs() << "Distance cannot be determined at compile time (positive step).\n";
+            return false;
+          }
+        }
+        // If the step is negative...
+        else if (SE.isKnownNegative(Step)) {
+          // ...if the distance is positive, then the two loops cannot be merged.
+          if (SE.isKnownPositive(Dist)) {
+            errs() << "Positive dependence detected (negative step).\n";
+            return false;
+          }
+          // ...if the distance cannot be determined at compile time, then the two loops cannot be merged.
+          else if (!SE.isKnownNonPositive(Dist)) {
+            errs() << "Distance cannot be determined at compile time (negative step).\n";
+            return false;
+          }
+        }
+        else {
+          errs() << "Step cannot be statically proven positive or negative.\n";
+          return false;
+        }
