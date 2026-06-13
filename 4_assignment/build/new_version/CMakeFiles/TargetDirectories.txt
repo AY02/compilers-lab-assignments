@@ -1,0 +1,9 @@
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/build/new_version/CMakeFiles/intrinsics_gen.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/build/new_version/CMakeFiles/omp_gen.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/build/new_version/CMakeFiles/acc_gen.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/build/new_version/CMakeFiles/ARMTargetParserTableGen.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/build/new_version/CMakeFiles/AArch64TargetParserTableGen.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/build/new_version/CMakeFiles/RISCVTargetParserTableGen.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/build/new_version/CMakeFiles/MyLoopFusionPass.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/build/new_version/CMakeFiles/edit_cache.dir
+/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/build/new_version/CMakeFiles/rebuild_cache.dir

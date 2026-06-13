@@ -174,12 +174,12 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         Value *Ptr0 = getLoadStorePointerOperand(I0);
         Value *Ptr1 = getLoadStorePointerOperand(I1);
         const SCEV *S0 = SE.getSCEV(Ptr0);
-        const SCEV *S1 = SE.getSCEV(Ptr1); // questo mi ritorna la f(i)
-        // Polynomial expressions expressions of array indices (example: A[f(i)]).
+        const SCEV *S1 = SE.getSCEV(Ptr1);
+        // Expressions of type: of array indices (example: A[f(i)]).
         const SCEVAddRecExpr *AR0 = dyn_cast<SCEVAddRecExpr>(S0);
         const SCEVAddRecExpr *AR1 = dyn_cast<SCEVAddRecExpr>(S1);
         if (!AR0 || !AR1) {
-          errs() << "Access with non-affine indexes.\n";
+          errs() << "Access with no additive recurrence indexes.\n";
           return false;
         }
         // The indices must grow identically (example: A[i+1] and A[2 * i] cannot be merged).
@@ -191,6 +191,10 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         const SCEV *Dist = SE.getMinusSCEV(AR0->getStart(), AR1->getStart());
         const SCEV *Step = AR0->getStepRecurrence(SE);
         errs() << "Distance: " << *Dist << "\tStep: " << *Step << "\n";
+        if (Dist->isZero()) {
+          errs() << "The distance is exactly zero and therefore there are no dependencies.\n";
+          continue;
+        }
         // If the step is positive...
         if (SE.isKnownPositive(Step)) {
           // ...if the distance is not non-negative, or cannot be determined at compile time,
@@ -203,7 +207,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         // ...else if the step is negative...
         else if (SE.isKnownNegative(Step)) {
           // ...if the distance is not negative or zero, then the two loops cannot be merged.
-          if (!SE.isKnownNegative(Dist) && !Dist->isZero()) {
+          if (!SE.isKnownNonPositive(Dist)) {
             errs() << "Negative temporal dependence detected (negative step).\n";
             return false;
           } 
@@ -269,6 +273,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       Instruction &Inst = *iter++;
       if (Inst.isTerminator()) break; 
       if (isa<PHINode>(&Inst) ||
+          isa<ICmpInst>(&Inst) ||
           &Inst == dyn_cast_or_null<Instruction>(IncValue1)) // In do-while cases
             continue;
       Inst.replaceUsesOfWith(IV1, IV0); // we replace the uses only of the instruction we effectively move
@@ -315,57 +320,53 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
 
-    bool changed = false;
+    errs() << "Starting pass for " << F.getName() << "...\n";
 
-    errs() << "Starting analysis for " << F.getName() << "...\n";
+    bool globalChanged = false;
+    bool localChanged = true;
 
-    LoopInfo *LI = &FAM.getResult<LoopAnalysis>(F);
-    DominatorTree *DT = &FAM.getResult<DominatorTreeAnalysis>(F);
-    PostDominatorTree *PDT = &FAM.getResult<PostDominatorTreeAnalysis>(F);
-    ScalarEvolution *SE = &FAM.getResult<ScalarEvolutionAnalysis>(F);
-    DependenceInfo *DI = &FAM.getResult<DependenceAnalysis>(F);
+    // until there are no more change, we continue to optimize
+    while (localChanged) {
+      localChanged = false;
 
-    SmallVector<Loop*, 8> Loops(LI->getLoopsInPreorder());
+      LoopInfo &LI = FAM.getResult<LoopAnalysis>(F);
+      DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
+      PostDominatorTree &PDT = FAM.getResult<PostDominatorTreeAnalysis>(F);
+      ScalarEvolution &SE = FAM.getResult<ScalarEvolutionAnalysis>(F);
+      DependenceInfo &DI = FAM.getResult<DependenceAnalysis>(F);
 
-    for (unsigned i = 0; i < Loops.size(); i++) {
-      Loop *LA = Loops[i];
-      if (!LA || !LA->isLoopSimplifyForm())
-        continue;
-      for (unsigned j = i + 1; j < Loops.size(); j++) {
-        Loop *LB = Loops[j];
-        if (!LB || !LB->isLoopSimplifyForm())
-          continue;
-        if (LA->getParentLoop() != LB->getParentLoop())
-          continue;
-        if (areLoopsFuseable(LA, LB, *DT, *PDT, *SE, *DI)) {
-          errs() << "Suitable for Loop Fusion: ";
-          LA->getHeader()->printAsOperand(errs(), false);
-          errs() << " and ";
-          LB->getHeader()->printAsOperand(errs(), false);
-          errs() << "\n";
-          if (loopFusion(LA, LB, *SE)) {
-            errs() << "Fusion successfully applied!\n";
-            Loops[j] = nullptr;
-            changed = true;
-            // here we need to recalculate the analyses if invalidated
-            PreservedAnalyses PA;
-            PA.preserve<LoopAnalysis>(); 
-            FAM.invalidate(F, PA);
-            DT = &FAM.getResult<DominatorTreeAnalysis>(F);
-            PDT = &FAM.getResult<PostDominatorTreeAnalysis>(F);
-            SE = &FAM.getResult<ScalarEvolutionAnalysis>(F);
-            DI = &FAM.getResult<DependenceAnalysis>(F);
-          }
+      SmallVector<Loop*, 8> Loops;
+      // We only visit the innermost loops.
+      for (Loop *TLL : LI)
+        for (Loop *L : depth_first(TLL))
+          if (L->isInnermost())
+            Loops.push_back(L);
+
+      for (unsigned i = 0; i < Loops.size() - 1; i++) {
+        Loop *LA = Loops[i];
+        Loop *LB = Loops[i+1];
+        if (!LA->isLoopSimplifyForm()) continue;
+        if (!LB->isLoopSimplifyForm()) continue;
+        if (LA->getParentLoop() != LB->getParentLoop()) continue;
+        if (!areLoopsFuseable(LA, LB, DT, PDT, SE, DI)) continue;
+        errs() << "Suitable for Loop Fusion: ";
+        LA->getHeader()->printAsOperand(errs(), false);
+        errs() << " and ";
+        LB->getHeader()->printAsOperand(errs(), false);
+        errs() << "\n";
+        if (loopFusion(LA, LB, SE)) {
+          errs() << "Loop Fusion successfully applied.\n";
+          globalChanged = true;
+          localChanged = true;
+          FAM.invalidate(F, PreservedAnalyses::none()); // We need to invalidate the analyses.
+          break;
         }
       }
     }
 
-    errs() << "Ending analysis for " << F.getName() << "...\n\n";
+    errs() << "Ending pass for " << F.getName() << "...\n\n";
 
-    if (changed)
-      return PreservedAnalyses::none();
-    else
-      return PreservedAnalyses::all();
+    return globalChanged ? PreservedAnalyses::none() : PreservedAnalyses::all();
   }
   static bool isRequired() { return true; }
 };

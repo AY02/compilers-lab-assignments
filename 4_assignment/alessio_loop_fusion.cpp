@@ -309,18 +309,19 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     bool globalChanged = false;
     bool localChanged = true;
 
+    // until there are no more change, we continue to optimize
     while (localChanged) {
       localChanged = false;
 
-      LoopInfo LI = FAM.getResult<LoopAnalysis>(F);
-      DominatorTree DT = FAM.getResult<DominatorTreeAnalysis>(F);
-      PostDominatorTree PDT = FAM.getResult<PostDominatorTreeAnalysis>(F);
-      ScalarEvolution SE = FAM.getResult<ScalarEvolutionAnalysis>(F);
-      DependenceInfo DI = FAM.getResult<DependenceAnalysis>(F);
+      LoopInfo &LI = FAM.getResult<LoopAnalysis>(F);
+      DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
+      PostDominatorTree &PDT = FAM.getResult<PostDominatorTreeAnalysis>(F);
+      ScalarEvolution &SE = FAM.getResult<ScalarEvolutionAnalysis>(F);
+      DependenceInfo &DI = FAM.getResult<DependenceAnalysis>(F);
 
       SmallVector<Loop*, 8> Loops;
       // We only visit the innermost loops.
-      for (Loop *TLL : *LI)
+      for (Loop *TLL : LI)
         for (Loop *L : depth_first(TLL))
           if (L->isInnermost())
             Loops.push_back(L);
