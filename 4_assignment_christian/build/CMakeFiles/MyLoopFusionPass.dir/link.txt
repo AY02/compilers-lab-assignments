@@ -1,1 +1,0 @@
-/usr/bin/c++ -fPIC -shared -Wl,-soname,libMyLoopFusionPass.so -o libMyLoopFusionPass.so "CMakeFiles/MyLoopFusionPass.dir/mnt/c/Users/Administrator/Documenti/CartellaCondivisaWSL/compilatori/middle-end/root_labs/compilers-lab-assignments/4_assignment/my_loop_fusion.cpp.o"
