@@ -1,1 +1,0 @@
-/usr/bin/c++  -fno-rtti -arch arm64 -dynamiclib -Wl,-headerpad_max_install_names -o libMyLoopFusionPass.dylib -install_name @rpath/libMyLoopFusionPass.dylib "CMakeFiles/MyLoopFusionPass.dir/Users/alessioyang/Desktop/compilers-lab-assignments/4_assignment_macos/my_loop_fusion.cpp.o"  -undefined dynamic_lookup
