@@ -1,1 +1,0 @@
-/usr/bin/c++ -fPIC  -fno-rtti -shared -Wl,-soname,libMyLoopFusionPass.so -o libMyLoopFusionPass.so "CMakeFiles/MyLoopFusionPass.dir/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/my_loop_fusion.cpp.o"
