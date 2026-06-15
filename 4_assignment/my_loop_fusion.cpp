@@ -220,26 +220,14 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
         errs() << "Additive recurrence distance: " << *Dist << ".\n";
         errs() << "Step: " << *Step << ".\n";
         // If the step is positive...
-        if (SE.isKnownPositive(Step)) {
-          if (SE.isKnownNegative(Dist)) {
-            errs() << "Negative dependence detected.\n";
-            return false;
-          }
-          if (!SE.isKnownNonNegative(Dist)) {
-            errs() << "Distance is not statically determinable.\n";
-            return false;
-          }
+        if (SE.isKnownPositive(Step) && SE.isKnownNegative(Dist)) {
+          errs() << "Negative dependence detected.\n";
+          return false;
         }
         // If the step is negative...
-        else if (SE.isKnownNegative(Step)) {
-          if (SE.isKnownPositive(Dist)) {
-            errs() << "Positive dependence detected.\n";
-            return false;
-          }
-          if (!SE.isKnownNonPositive(Dist)) {
-            errs() << "Distance is not statically determinable.\n";
-            return false;
-          }
+        else if (SE.isKnownNegative(Step) && SE.isKnownPositive(Dist)) {
+          errs() << "Positive dependence detected.\n";
+          return false;
         }
       }
     }
