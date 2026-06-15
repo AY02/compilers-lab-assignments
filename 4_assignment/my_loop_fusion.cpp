@@ -62,7 +62,7 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
     }
     
     // Fourth pruning: Both loops have no internal nesting. Otherwise, the
-    // implementation of condition 4 becomes significantly more complicated.
+    // implementation becomes more complicated.
     if (!LA->isInnermost() || !LB->isInnermost())
       return false;
 
@@ -101,6 +101,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
       // the entry block of the second loop. For this reason, we need to verify that
       // the successor of the dedicated exit block of the first loop coincides with
       // the entry block of the second loop.
+      // No exit block for the loop has a predecessor that is outside the loop. This
+      // implies that all exit blocks are dominated by the loop header.
       Instruction *Term = ExitBlock0->getTerminator();
       if (!Term || Term->getSuccessor(0) != Entry1) {
         errs() << "The dedicated exit of the first loop does not match the entry of "
@@ -172,9 +174,6 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
           errs() << "No depencency between instructions.\n";
           continue;
         }
-        // The compiler doesn't understand the dependency and assumes the worst case.
-        if (Dep->isConfused())
-          return false;
         // Hybrid Approach: calculate negative distance using SCEV to bypass the lack
         // of 'SameSD' support in LLVM 19.1.7.
         Value *Ptr0 = getLoadStorePointerOperand(I0);
