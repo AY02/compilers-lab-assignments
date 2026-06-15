@@ -17,9 +17,8 @@ struct MyMultiInstruction: PassInfoMixin<MyMultiInstruction> {
       return;
     while (!OldV->use_empty()) {
       Use &U = *OldV->use_begin();
-      // It removes U from the OldV use list.
-      // It adds U in NewV's use list.
-      U.set(NewV);
+      U.set(NewV); // It removes U from the OldV use list.
+                   // It adds U in NewV's use list.
     }
   }
 
@@ -40,9 +39,8 @@ struct MyMultiInstruction: PassInfoMixin<MyMultiInstruction> {
           curr_op_code != Instruction::Add && curr_op_code != Instruction::Sub &&
           curr_op_code != Instruction::Mul && curr_op_code != Instruction::UDiv &&
           curr_op_code != Instruction::SDiv
-        ) {
+        )
           continue;
-        }
 
         Value *curr_op0 = curr_instr.getOperand(0);
         Value *curr_op1 = curr_instr.getOperand(1);
@@ -134,9 +132,8 @@ struct MyMultiInstruction: PassInfoMixin<MyMultiInstruction> {
         // prev_const_op = curr_const_op = 5
         // prev_op = x
         // Replace all uses of curr_instr with x
-        if (prev_const_op == curr_const_op) {
-            myReplaceAllUsesWith(&curr_instr, prev_op);
-        }
+        if (prev_const_op == curr_const_op)
+          myReplaceAllUsesWith(&curr_instr, prev_op);
 
       }
     }
