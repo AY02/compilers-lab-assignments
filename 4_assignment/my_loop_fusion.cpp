@@ -342,7 +342,8 @@ struct MyLoopFusionPass: PassInfoMixin<MyLoopFusionPass> {
 
     // Even if L1 is a dead loop, the CFG relations remain valid. Since the new exit
     // block of L0 (Exit1) will have two predecessors (Exiting0 and Exiting1), L0
-    // will no longer be in canonical form.
+    // will no longer be in canonical form (Exiting1 is a predecessor that is not
+    // part of L1).
     // To restore the canonical form, we remove Exiting1 from the predecessors of
     // Exit1, and we replace the terminator of Exiting1 with an unconditional branch
     // to L1's header.
