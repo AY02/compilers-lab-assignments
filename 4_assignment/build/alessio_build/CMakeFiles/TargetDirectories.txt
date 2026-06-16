@@ -1,0 +1,9 @@
+/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build/CMakeFiles/intrinsics_gen.dir
+/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build/CMakeFiles/omp_gen.dir
+/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build/CMakeFiles/acc_gen.dir
+/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build/CMakeFiles/ARMTargetParserTableGen.dir
+/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build/CMakeFiles/AArch64TargetParserTableGen.dir
+/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build/CMakeFiles/RISCVTargetParserTableGen.dir
+/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build/CMakeFiles/MyLoopFusionPass.dir
+/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build/CMakeFiles/edit_cache.dir
+/home/ayang/Documenti/unimore/compilatori/parte2/compilers-lab-assignments/4_assignment/build/alessio_build/CMakeFiles/rebuild_cache.dir
