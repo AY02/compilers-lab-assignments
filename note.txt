@@ -1,0 +1,7 @@
+export LLVM_DIR=/home/ayang/Documenti/unimore/compilatori/parte2/LLVM-19.1.7-Linux-X64/bin
+cmake -DLT_LLVM_INSTALL_DIR=$LLVM_DIR
+make
+
+clang -O0 -Xclang -disable-O0-optnone -emit-llvm test.c -S -o test.O0.ll
+opt -passes=mem2reg test.O0.ll -S -o test.m2r.ll
+opt -load-pass-plugin build/libTestPass.so -passes="test-pass" test.m2r.ll -S -o ir/test.optimized.ll
